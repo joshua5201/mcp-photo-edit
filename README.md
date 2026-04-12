@@ -247,6 +247,9 @@ Current default-backend MVP adjustments:
 - `green_balance`
 - `highlights`
 - `shadows`
+- `sharpen_amount`
+- `sharpen_radius`
+- `sharpen_contrast`
 - `orientation`
 - `crop`
 

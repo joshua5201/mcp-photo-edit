@@ -146,6 +146,9 @@ Current MVP keys:
 - `green_balance`
 - `highlights`
 - `shadows`
+- `sharpen_amount`
+- `sharpen_radius`
+- `sharpen_contrast`
 - `orientation`
 - `crop`
 
@@ -160,7 +163,7 @@ Rules:
 
 Current implementation note:
 
-The adapter writes native RawTherapee `PP3` settings. The current MVP exposes core tone controls, channel mixing, denoise, manual white balance, and highlight / shadow recovery. Broader support such as vibrance or continuous rotation can be added later without changing the session workflow.
+The adapter writes native RawTherapee `PP3` settings. The current MVP exposes core tone controls, channel mixing, denoise, manual white balance, highlight / shadow recovery, and main sharpening. Broader support such as vibrance or continuous rotation can be added later without changing the session workflow.
 
 ## Architecture
 

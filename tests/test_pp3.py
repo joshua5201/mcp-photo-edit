@@ -89,3 +89,23 @@ def test_build_pp3_uses_normalized_manual_white_balance_defaults() -> None:
     assert "Setting=Custom" in pp3
     assert "Temperature=6504" in pp3
     assert "Green=1.08" in pp3
+
+
+def test_build_pp3_contains_sharpening_block() -> None:
+    pp3 = build_pp3(
+        AdjustmentState(
+            sharpen_amount=180.0,
+            sharpen_radius=0.8,
+            sharpen_contrast=30.0,
+        ),
+        image_width=4032,
+        image_height=6056,
+    )
+
+    assert "[Sharpening]" in pp3
+    assert "Enabled=true" in pp3
+    assert "Method=usm" in pp3
+    assert "Amount=180" in pp3
+    assert "Radius=0.8" in pp3
+    assert "Contrast=30" in pp3
+    assert "BlurRadius=0.2" in pp3

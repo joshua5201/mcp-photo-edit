@@ -112,6 +112,30 @@ ADJUSTMENT_SPECS: dict[str, dict[str, Any]] = {
         "description": "Shadow recovery strength.",
         "example": 22.0,
     },
+    "sharpen_amount": {
+        "minimum": 0,
+        "maximum": 1000,
+        "default": 0.0,
+        "unit": "integer_strength",
+        "description": "Sharpening amount using RawTherapee's main sharpening tool in usm mode.",
+        "example": 180,
+    },
+    "sharpen_radius": {
+        "minimum": 0.3,
+        "maximum": 3.0,
+        "default": 0.5,
+        "unit": "pixels",
+        "description": "Sharpening radius using RawTherapee's main sharpening tool in usm mode.",
+        "example": 0.8,
+    },
+    "sharpen_contrast": {
+        "minimum": 0.0,
+        "maximum": 200.0,
+        "default": 20.0,
+        "unit": "strength",
+        "description": "Sharpening contrast using RawTherapee's main sharpening tool in usm mode.",
+        "example": 30.0,
+    },
 }
 
 RESETTABLE_FIELDS = tuple(ADJUSTMENT_SPECS.keys()) + ("crop",)
@@ -191,6 +215,9 @@ class AdjustmentState(BaseModel):
     green_balance: float | None = Field(default=None, ge=0.02, le=100.0)
     highlights: float = Field(default=0.0, ge=0.0, le=100.0)
     shadows: float = Field(default=0.0, ge=0.0, le=100.0)
+    sharpen_amount: int = Field(default=0, ge=0, le=1000)
+    sharpen_radius: float = Field(default=0.5, ge=0.3, le=3.0)
+    sharpen_contrast: float = Field(default=20.0, ge=0.0, le=200.0)
     orientation: int = 0
     crop: CropAdjustment | None = None
 
@@ -242,6 +269,9 @@ class AdjustmentPatch(BaseModel):
     green_balance: float | None = Field(default=None, ge=0.02, le=100.0)
     highlights: float | None = Field(default=None, ge=0.0, le=100.0)
     shadows: float | None = Field(default=None, ge=0.0, le=100.0)
+    sharpen_amount: int | None = Field(default=None, ge=0, le=1000)
+    sharpen_radius: float | None = Field(default=None, ge=0.3, le=3.0)
+    sharpen_contrast: float | None = Field(default=None, ge=0.0, le=200.0)
     orientation: int | None = None
     crop: CropAdjustment | None = None
 

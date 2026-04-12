@@ -56,6 +56,7 @@ Use this skill when an agent should edit photos through the `photo-edit` MCP ser
 - `rgb_mixer` uses per-output RGB rows in percentage units.
 - `denoise_luma`, `denoise_detail`, and `denoise_chroma` are separate controls.
 - `color_temperature` and `green_balance` provide manual white balance control.
+- `sharpen_amount`, `sharpen_radius`, and `sharpen_contrast` control the main sharpening tool.
 - Prefer incremental changes instead of large blind jumps.
 
 ## Example Patch
@@ -71,6 +72,9 @@ Use this skill when an agent should edit photos through the `photo-edit` MCP ser
   "green_balance": 1.03,
   "highlights": 12,
   "shadows": 16,
+  "sharpen_amount": 180,
+  "sharpen_radius": 0.8,
+  "sharpen_contrast": 30,
   "orientation": 90,
   "crop": {
     "left": 0.1,

@@ -104,6 +104,26 @@ def build_pp3(
             ]
         )
 
+    if _has_sharpening(adjustments):
+        lines.extend(
+            [
+                "",
+                "[Sharpening]",
+                "Enabled=true",
+                f"Contrast={_fmt(adjustments.sharpen_contrast)}",
+                "Method=usm",
+                f"Radius={_fmt(adjustments.sharpen_radius)}",
+                "BlurRadius=0.2",
+                f"Amount={_fmt(adjustments.sharpen_amount)}",
+                "Threshold=20;80;2000;1200;",
+                "OnlyEdges=false",
+                "EdgedetectionRadius=1.9",
+                "EdgeTolerance=1800",
+                "HalocontrolEnabled=false",
+                "HalocontrolAmount=85",
+            ]
+        )
+
     if adjustments.orientation != 0:
         lines.extend(
             [
@@ -160,6 +180,16 @@ def _has_denoise(adjustments: AdjustmentState) -> bool:
             adjustments.denoise_luma,
             adjustments.denoise_detail,
             adjustments.denoise_chroma,
+        )
+    )
+
+
+def _has_sharpening(adjustments: AdjustmentState) -> bool:
+    return any(
+        (
+            adjustments.sharpen_amount != 0,
+            adjustments.sharpen_radius != 0.5,
+            adjustments.sharpen_contrast != 20.0,
         )
     )
 

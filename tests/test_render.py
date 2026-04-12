@@ -124,6 +124,9 @@ def test_rawtherapee_write_state_file_includes_new_adjustment_blocks(tmp_path: P
             green_balance=0.98,
             highlights=14.0,
             shadows=20.0,
+            sharpen_amount=160.0,
+            sharpen_radius=0.9,
+            sharpen_contrast=26.0,
         ),
         profile,
     )
@@ -133,3 +136,4 @@ def test_rawtherapee_write_state_file_includes_new_adjustment_blocks(tmp_path: P
     assert "[Directional Pyramid Denoising]" in pp3
     assert "[White Balance]" in pp3
     assert "[Shadows & Highlights]" in pp3
+    assert "[Sharpening]" in pp3

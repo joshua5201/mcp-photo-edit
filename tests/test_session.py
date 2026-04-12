@@ -235,6 +235,9 @@ def test_list_supported_adjustments_includes_new_rawtherapee_controls(tmp_path: 
         "green_balance",
         "highlights",
         "shadows",
+        "sharpen_amount",
+        "sharpen_radius",
+        "sharpen_contrast",
         "orientation",
         "crop",
     )
@@ -254,6 +257,9 @@ def test_list_supported_adjustments_includes_new_rawtherapee_controls(tmp_path: 
     assert supported["green_balance"].default is None
     assert supported["highlights"].maximum == 100.0
     assert supported["shadows"].maximum == 100.0
+    assert supported["sharpen_amount"].maximum == 1000.0
+    assert supported["sharpen_radius"].default == 0.5
+    assert supported["sharpen_contrast"].default == 20.0
 
 
 def test_get_session_migrates_legacy_xmp_path_to_state_path(tmp_path: Path) -> None:

@@ -46,6 +46,9 @@ def test_adjustment_patch_supports_new_rawtherapee_fields() -> None:
             green_balance=1.03,
             highlights=15.0,
             shadows=22.0,
+            sharpen_amount=180.0,
+            sharpen_radius=0.8,
+            sharpen_contrast=28.0,
         )
     )
 
@@ -58,6 +61,9 @@ def test_adjustment_patch_supports_new_rawtherapee_fields() -> None:
     assert updated.green_balance == 1.03
     assert updated.highlights == 15.0
     assert updated.shadows == 22.0
+    assert updated.sharpen_amount == 180.0
+    assert updated.sharpen_radius == 0.8
+    assert updated.sharpen_contrast == 28.0
 
 
 def test_manual_white_balance_normalizes_missing_pair_value() -> None:
@@ -74,3 +80,11 @@ def test_manual_white_balance_reset_keeps_other_field_independent() -> None:
 
     assert reset.color_temperature == 5200.0
     assert reset.green_balance is None
+
+
+def test_sharpening_fields_validate_ranges() -> None:
+    with pytest.raises(ValidationError):
+        AdjustmentPatch(sharpen_radius=0.2)
+
+    with pytest.raises(ValidationError):
+        AdjustmentPatch(sharpen_amount=0.5)
