@@ -2,7 +2,7 @@
 
 An MCP server for agent-driven photo editing with RawTherapee.
 
-The server exposes a session-based editing workflow instead of raw sidecar manipulation. Agents create an edit session, apply structured adjustments, render previews, and export a final image. Internally the server writes session-owned RawTherapee `PP3` files and renders them through `rawtherapee-cli`.
+The server exposes a session-based editing workflow instead of raw sidecar manipulation. Agents create an edit session, apply structured adjustments, regenerate previews when needed, and export a final image. Internally the server writes session-owned RawTherapee `PP3` files and renders them through `rawtherapee-cli`.
 
 ## Status
 
@@ -203,12 +203,14 @@ gemini skills list
 - `export_image`
 - `list_supported_adjustments`
 
+`render_preview` regenerates the current session preview, appends a new preview artifact, and returns the latest `preview_count`.
+
 ## Typical Agent Workflow
 
 1. Create a session from an input image.
-2. Inspect the returned preview image and current adjustment state.
+2. Inspect the returned preview image, `preview_count`, and current adjustment state.
 3. Apply one or more adjustments.
-4. Re-check the preview.
+4. Re-check the preview by calling `render_preview` whenever you want a fresh preview artifact.
 5. Export a final image explicitly.
 
 See [SKILL.md](skills/mcp-photo-edit/SKILL.md) for an agent-facing usage guide.

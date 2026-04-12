@@ -5,18 +5,10 @@ from __future__ import annotations
 import shutil
 import subprocess
 from datetime import UTC, datetime
-from enum import Enum
 from pathlib import Path
 from typing import Any
 
 from pydantic import BaseModel, Field, field_validator, model_validator
-
-class RenderMode(str, Enum):
-    """Supported preview rendering modes."""
-
-    CURRENT = "current"
-    BASELINE = "baseline"
-    RAWTHERAPEE_DEFAULT = "rawtherapee_default"
 
 
 ADJUSTMENT_SPECS: dict[str, dict[str, Any]] = {
@@ -199,6 +191,14 @@ class SourceImageInfo(BaseModel):
         )
 
 
+class PreviewArtifact(BaseModel):
+    """A single preview render artifact."""
+
+    sequence: int
+    path: str
+    rendered_at: datetime = Field(default_factory=utc_now)
+
+
 def _exiftool_dimensions(input_path: Path) -> tuple[int | None, int | None]:
     executable = shutil.which("exiftool")
     if executable is None:
@@ -240,8 +240,7 @@ class SessionState(BaseModel):
     xmp_path: str | None = None
     preview_path: str
     preview_max_size: int = Field(default=1024, ge=64, le=4096)
-    preview_mode: RenderMode = RenderMode.CURRENT
-    previews: dict[RenderMode, str] = Field(default_factory=dict)
+    preview_history: list[PreviewArtifact] = Field(default_factory=list)
     adjustments: AdjustmentState = Field(default_factory=AdjustmentState)
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
@@ -259,12 +258,10 @@ class SessionState(BaseModel):
 
     @model_validator(mode="after")
     def ensure_compatibility(self) -> "SessionState":
-        """Load older manifests that only persisted xmp_path or missing preview maps."""
+        """Load older manifests that only persisted xmp_path or a single preview path."""
 
         if self.state_path is None and self.xmp_path is not None:
             self.state_path = self.xmp_path
-        if self.preview_path and not self.previews:
-            self.previews[RenderMode.CURRENT] = self.preview_path
         return self
 
     def touch(self) -> None:
@@ -288,7 +285,8 @@ class PreviewResult(BaseModel):
     ok: bool = True
     session_id: str | None = None
     preview_path: str | None = None
-    mode: RenderMode | None = None
+    preview_count: int | None = None
+    preview_history: list[PreviewArtifact] = Field(default_factory=list)
     last_rendered_at: datetime | None = None
     error: ErrorInfo | None = None
 

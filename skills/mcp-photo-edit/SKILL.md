@@ -22,18 +22,18 @@ Use this skill when an agent should edit photos through the `photo-edit` MCP ser
 ## Recommended Workflow
 
 1. Call `create_edit_session` with the image path.
-2. See the returned preview image to confirm the current state, finalise editing strategy and the parameters.
+2. Inspect the returned preview image, `preview_count`, and current state to confirm the starting point.
 3. Use `list_supported_adjustments` if ranges or semantics are unclear.
 4. Apply small patches with `apply_adjustments`.
 5. Re-check the preview after each patch.
-6. (If needed) Use `render_preview` to regenerate a preview, for example, to see the `baseline` image.
+6. Use `render_preview` whenever you want a fresh preview artifact for the current session state.
 7. Call `export_image` only when the preview looks correct.
 
-## Preview Modes
+## Preview History
 
-- `current` (default): Renders using the current session adjustments.
-- `baseline`: Renders the source image without any edits.
-- `rawtherapee_default`: Renders using the user's default RawTherapee profile. Non-deterministic and machine-specific.
+- Every preview render is preserved as a numbered artifact.
+- `preview_path` always points at the latest preview.
+- `preview_count` tells you how many preview artifacts exist for the session.
 
 ## Adjustment Notes
 

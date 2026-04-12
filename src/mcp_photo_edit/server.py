@@ -13,7 +13,6 @@ from .models import (
     ErrorInfo,
     ExportResult,
     PreviewResult,
-    RenderMode,
     SessionEnvelope,
     SupportedAdjustmentsResult,
 )
@@ -64,21 +63,20 @@ def create_server() -> FastMCP:
     @mcp.tool()
     def render_preview(
         session_id: str,
-        mode: RenderMode = RenderMode.CURRENT,
         preview_max_size: int | None = None,
     ) -> PreviewResult:
-        """Explicitly (re)render a session preview."""
+        """Explicitly (re)render the current session preview."""
 
         try:
             session = session_manager.render_preview(
                 session_id,
-                mode=mode,
                 preview_max_size=preview_max_size,
             )
             return PreviewResult(
                 session_id=session.session_id,
                 preview_path=session.preview_path,
-                mode=session.preview_mode,
+                preview_count=len(session.preview_history),
+                preview_history=session.preview_history,
                 last_rendered_at=session.last_rendered_at,
             )
         except DarktableMcpError as exc:

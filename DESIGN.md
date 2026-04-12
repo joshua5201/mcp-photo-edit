@@ -56,10 +56,10 @@ The design is intentionally opinionated around agent ergonomics:
 ## User Workflow
 
 1. Create an edit session from an input image path.
-2. Generate a default sidecar and initial preview.
-3. Inspect current edit state and preview path.
+2. Generate a canonical `session.pp3` and an initial preview artifact.
+3. Inspect current edit state, preview path, and preview count.
 4. Apply structured adjustments.
-5. Re-render the preview.
+5. Re-render the preview when you want a fresh artifact.
 6. Repeat until the result is acceptable.
 7. Export a final image explicitly.
 
@@ -67,7 +67,7 @@ The design is intentionally opinionated around agent ergonomics:
 
 ### `create_edit_session`
 
-Creates a managed workspace for an input image and renders an initial preview.
+Creates a managed workspace for an input image and renders an initial preview artifact.
 
 Input:
 
@@ -81,7 +81,21 @@ Output:
 - source file info
 - current adjustment state
 - preview path
+- preview count
+- preview history
 - internal session paths that are safe to expose
+
+The initial preview is stored as the first numbered artifact, and later preview renders append additional artifacts without overwriting older files.
+
+### `render_preview`
+
+Regenerates the current session preview and appends a new preview artifact to the session history.
+
+Output:
+
+- latest preview path
+- preview count
+- preview history
 
 ### `get_edit_session`
 
@@ -121,6 +135,7 @@ Rules:
 - crop coordinates are normalized to `0..1`
 - orientation uses quarter-turn values: `-90`, `0`, `90`, `180`
 - preview and export work from the same logical session state
+- every preview render is preserved as a numbered artifact
 
 Current implementation note:
 
@@ -160,13 +175,13 @@ Session artifacts:
 
 - `session.json`
 - `session.pp3`
-- `preview.jpg`
+- `preview-0001.jpg`, `preview-0002.jpg`, ...
 - temporary render outputs
 
 Rules:
 
 - source images are never modified
-- previews are disposable intermediates
+- previews are preserved as session history artifacts
 - exports are explicit user-requested outputs
 - paths are validated before use
 

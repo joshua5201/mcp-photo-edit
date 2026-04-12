@@ -22,11 +22,12 @@ This file is a fast handoff for future work on `mcp-photo-edit`.
 1. `create_edit_session`
 2. `get_edit_session`
 3. `apply_adjustments`
-4. `reset_adjustments`
-5. `export_image`
-6. `list_supported_adjustments`
+4. `render_preview`
+5. `reset_adjustments`
+6. `export_image`
+7. `list_supported_adjustments`
 
-Sessions are stateful and workspace-backed. The public API is adjustment-based, not sidecar-based.
+Sessions are stateful and workspace-backed. The public API is adjustment-based, not sidecar-based. Preview renders are preserved as numbered artifacts, and the latest preview is also returned as `preview_path` with a `preview_count`.
 
 ## Current Adjustment Set
 
@@ -94,7 +95,7 @@ python3 -m compileall src
 - Keep public docs free of machine-specific anecdotes and local sample-file references.
 - Keep public docs free of deprecated darktable setup guidance.
 - If mentioning darktable at all, describe it only as unstable legacy code slated for removal.
-- Treat `README.md`, `DESIGN.md`, and `docs/AGENT_SKILL.md` as the public source of truth.
+- Treat `README.md`, `DESIGN.md`, and `skills/mcp-photo-edit/SKILL.md` as the public source of truth.
 
 ## Good Next Areas
 

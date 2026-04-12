@@ -14,7 +14,7 @@ from .models import (
     RESETTABLE_FIELDS,
     AdjustmentPatch,
     AdjustmentSpec,
-    RenderMode,
+    PreviewArtifact,
     SessionState,
     SourceImageInfo,
     utc_now,
@@ -67,6 +67,7 @@ class SessionManager:
         session_dir.mkdir(parents=True, exist_ok=False)
         backend = self.backends[self.default_backend_id]
         state_path = session_dir / backend.state_file_name
+        initial_preview_path = session_dir / self._preview_filename(1)
 
         session = SessionState(
             session_id=session_id,
@@ -75,7 +76,7 @@ class SessionManager:
             workspace_dir=str(session_dir),
             state_path=str(state_path),
             xmp_path=str(state_path) if backend.backend_id == "darktable-cli" else None,
-            preview_path=str(session_dir / "preview.jpg"),
+            preview_path=str(initial_preview_path),
             preview_max_size=preview_max_size,
             backend=backend.backend_id,
         )
@@ -90,7 +91,10 @@ class SessionManager:
         manifest_path = self._manifest_path(session_id)
         if not manifest_path.exists():
             raise SessionNotFoundError(session_id)
-        return SessionState.model_validate_json(manifest_path.read_text(encoding="utf-8"))
+        session = SessionState.model_validate_json(manifest_path.read_text(encoding="utf-8"))
+        if not session.preview_history and session.preview_path:
+            session.preview_history = [PreviewArtifact(sequence=1, path=session.preview_path)]
+        return session
 
     def apply_adjustments(
         self,
@@ -157,16 +161,15 @@ class SessionManager:
         self,
         session_id: str,
         *,
-        mode: RenderMode = RenderMode.CURRENT,
         preview_max_size: int | None = None,
     ) -> SessionState:
-        """Explicitly (re)render a session preview."""
+        """Explicitly (re)render the current session preview."""
 
         session = self.get_session(session_id)
         if preview_max_size is not None:
             session.preview_max_size = preview_max_size
 
-        self._render_preview(session, mode=mode)
+        self._render_preview(session)
         self._save_session(session)
         return session
 
@@ -214,25 +217,25 @@ class SessionManager:
             self._state_path(session),
         )
 
-    def _render_preview(self, session: SessionState, mode: RenderMode = RenderMode.CURRENT) -> None:
+    def _render_preview(self, session: SessionState) -> None:
         backend = self._backend_for_session(session)
-
-        if mode == RenderMode.CURRENT:
-            target_path = Path(session.workspace_dir) / "preview.jpg"
-        else:
-            target_path = Path(session.workspace_dir) / f"preview-{mode.value}.jpg"
+        sequence = len(session.preview_history) + 1
+        target_path = Path(session.workspace_dir) / self._preview_filename(sequence)
 
         rendered_size = backend.render_preview(
             Path(session.source.input_path),
-            self._state_path(session) if mode == RenderMode.CURRENT else None,
+            self._state_path(session),
             target_path,
             max_size=session.preview_max_size,
-            mode=mode,
         )
 
-        session.preview_mode = mode
         session.preview_path = str(target_path)
-        session.previews[mode] = str(target_path)
+        session.preview_history.append(
+            PreviewArtifact(
+                sequence=sequence,
+                path=str(target_path),
+            )
+        )
 
         if rendered_size is not None and (
             session.source.width is None
@@ -259,6 +262,9 @@ class SessionManager:
                 hint=f"Available backends: {supported}.",
             )
         return backend
+
+    def _preview_filename(self, sequence: int) -> str:
+        return f"preview-{sequence:04d}.jpg"
 
     def _save_session(self, session: SessionState) -> None:
         manifest_path = self._manifest_path(session.session_id)

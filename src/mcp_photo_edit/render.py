@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Protocol
 
 from .errors import BackendUnavailableError, RenderFailedError, ValidationError
-from .models import AdjustmentState, RenderMode, SourceImageInfo
+from .models import AdjustmentState, SourceImageInfo
 from .pp3 import build_pp3
 from .xmp import build_sidecar
 
@@ -40,11 +40,10 @@ class RenderBackend(Protocol):
     def render_preview(
         self,
         source_path: Path,
-        state_path: Path | None,
+        state_path: Path,
         target_path: Path,
         *,
         max_size: int | None = None,
-        mode: RenderMode = RenderMode.CURRENT,
     ) -> tuple[int, int] | None:
         """Render a preview image."""
 
@@ -92,14 +91,11 @@ class DarktableBackend:
     def render_preview(
         self,
         source_path: Path,
-        state_path: Path | None,
+        state_path: Path,
         target_path: Path,
         *,
         max_size: int | None = None,
-        mode: RenderMode = RenderMode.CURRENT,
     ) -> tuple[int, int] | None:
-        # Darktable support is deprecated; only CURRENT mode is supported.
-        # We ignore other modes to minimize legacy code maintenance.
         return self._render(source_path, state_path, target_path, max_size=max_size)
 
     def render_export(
@@ -113,7 +109,7 @@ class DarktableBackend:
     def _render(
         self,
         source_path: Path,
-        state_path: Path | None,
+        state_path: Path,
         target_path: Path,
         *,
         max_size: int | None = None,
@@ -129,17 +125,11 @@ class DarktableBackend:
             command = [
                 self.executable,
                 str(source_path),
+                str(state_path),
+                str(temp_output_dir),
+                "--out-ext",
+                out_ext,
             ]
-            if state_path is not None:
-                command.append(str(state_path))
-
-            command.extend(
-                [
-                    str(temp_output_dir),
-                    "--out-ext",
-                    out_ext,
-                ]
-            )
             if max_size is not None:
                 command.extend(["--width", str(max_size), "--height", str(max_size)])
 
@@ -208,11 +198,10 @@ class RawTherapeeBackend:
     def render_preview(
         self,
         source_path: Path,
-        state_path: Path | None,
+        state_path: Path,
         target_path: Path,
         *,
         max_size: int | None = None,
-        mode: RenderMode = RenderMode.CURRENT,
     ) -> tuple[int, int] | None:
         self.ensure_available()
         target_path = target_path.resolve()
@@ -225,7 +214,6 @@ class RawTherapeeBackend:
                 state_path,
                 temp_output,
                 quality=self.preview_quality,
-                mode=mode,
             )
             self._run(command)
             rendered_size = _image_dimensions(temp_output)
@@ -250,7 +238,6 @@ class RawTherapeeBackend:
             state_path,
             target_path,
             quality=self.export_quality,
-            mode=RenderMode.CURRENT,
         )
         self._run(command)
         return _image_dimensions(target_path)
@@ -268,28 +255,23 @@ class RawTherapeeBackend:
     def _base_command(
         self,
         source_path: Path,
-        state_path: Path | None,
+        state_path: Path,
         target_path: Path,
         *,
         quality: int,
-        mode: RenderMode = RenderMode.CURRENT,
     ) -> list[str]:
         output_args = self._output_args(target_path, quality)
-        command = [
+        return [
             self.executable,
             "-o",
             str(target_path),
             "-Y",
             *output_args,
+            "-p",
+            str(state_path),
+            "-c",
+            str(source_path),
         ]
-
-        if mode == RenderMode.CURRENT and state_path is not None:
-            command.extend(["-p", str(state_path)])
-        elif mode == RenderMode.RAWTHERAPEE_DEFAULT:
-            command.append("-d")
-
-        command.extend(["-c", str(source_path)])
-        return command
 
     def _output_args(self, target_path: Path, quality: int) -> list[str]:
         suffix = target_path.suffix.lower()
