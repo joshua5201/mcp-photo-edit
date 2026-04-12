@@ -187,13 +187,15 @@ Current default-backend MVP adjustments:
 - `exposure`
 - `contrast`
 - `saturation`
+- `orientation`
+- `crop`
 
 Use `list_supported_adjustments` to discover exact ranges, defaults, and example payloads at runtime.
 
 Backend note:
 
-- `rawtherapee-cli` is the default backend and currently supports `exposure`, `contrast`, and `saturation`
-- `darktable-cli` remains available as an optional fallback backend while geometry support is migrated
+- `rawtherapee-cli` is the default backend and now covers the current MVP adjustment set
+- `darktable-cli` remains available as an optional fallback backend during the transition
 
 ## Project Layout
 

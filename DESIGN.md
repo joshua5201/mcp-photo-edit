@@ -204,7 +204,6 @@ This deliberately trades breadth for clarity and implementation reliability.
 
 ## Future Improvements
 
-- style presets such as film, portrait, and landscape
 - histogram and metadata inspection helpers
 - undo / redo and preview history
 - compare current preview against prior preview

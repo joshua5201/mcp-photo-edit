@@ -186,19 +186,25 @@ class SessionManager:
     def _write_state(self, session: SessionState) -> None:
         backend = self._backend_for_session(session)
         backend.write_state_file(
-            session.source.file_name,
+            session.source,
             session.adjustments,
             self._state_path(session),
         )
 
     def _render_preview(self, session: SessionState) -> None:
         backend = self._backend_for_session(session)
-        backend.render_preview(
+        rendered_size = backend.render_preview(
             Path(session.source.input_path),
             self._state_path(session),
             Path(session.preview_path),
             max_size=session.preview_max_size,
         )
+        if rendered_size is not None and (
+            session.source.width is None
+            or session.source.height is None
+            or (session.adjustments.crop is None and session.adjustments.orientation == 0)
+        ):
+            session.source.width, session.source.height = rendered_size
         session.last_rendered_at = utc_now()
 
     def _state_path(self, session: SessionState) -> Path:

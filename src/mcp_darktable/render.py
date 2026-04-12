@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Protocol
 
 from .errors import BackendUnavailableError, RenderFailedError, ValidationError
-from .models import AdjustmentState
+from .models import AdjustmentState, SourceImageInfo
 from .pp3 import build_pp3
 from .xmp import build_sidecar
 
@@ -31,7 +31,7 @@ class RenderBackend(Protocol):
 
     def write_state_file(
         self,
-        source_file_name: str,
+        source: SourceImageInfo,
         adjustments: AdjustmentState,
         state_path: Path,
     ) -> None:
@@ -44,7 +44,7 @@ class RenderBackend(Protocol):
         target_path: Path,
         *,
         max_size: int | None = None,
-    ) -> None:
+    ) -> tuple[int, int] | None:
         """Render a preview image."""
 
     def render_export(
@@ -52,7 +52,7 @@ class RenderBackend(Protocol):
         source_path: Path,
         state_path: Path,
         target_path: Path,
-    ) -> None:
+    ) -> tuple[int, int] | None:
         """Render a final export."""
 
 
@@ -78,13 +78,13 @@ class DarktableBackend:
 
     def write_state_file(
         self,
-        source_file_name: str,
+        source: SourceImageInfo,
         adjustments: AdjustmentState,
         state_path: Path,
     ) -> None:
         state_path.parent.mkdir(parents=True, exist_ok=True)
         state_path.write_text(
-            build_sidecar(source_file_name, adjustments),
+            build_sidecar(source.file_name, adjustments),
             encoding="utf-8",
         )
 
@@ -95,16 +95,16 @@ class DarktableBackend:
         target_path: Path,
         *,
         max_size: int | None = None,
-    ) -> None:
-        self._render(source_path, state_path, target_path, max_size=max_size)
+    ) -> tuple[int, int] | None:
+        return self._render(source_path, state_path, target_path, max_size=max_size)
 
     def render_export(
         self,
         source_path: Path,
         state_path: Path,
         target_path: Path,
-    ) -> None:
-        self._render(source_path, state_path, target_path)
+    ) -> tuple[int, int] | None:
+        return self._render(source_path, state_path, target_path)
 
     def _render(
         self,
@@ -113,7 +113,7 @@ class DarktableBackend:
         target_path: Path,
         *,
         max_size: int | None = None,
-    ) -> None:
+    ) -> tuple[int, int] | None:
         self.ensure_available()
         target_path = target_path.resolve()
         target_path.parent.mkdir(parents=True, exist_ok=True)
@@ -153,6 +153,7 @@ class DarktableBackend:
                 )
 
             rendered_files[-1].replace(target_path)
+            return _image_dimensions(target_path)
 
 
 class RawTherapeeBackend:
@@ -160,7 +161,7 @@ class RawTherapeeBackend:
 
     backend_id = "rawtherapee-cli"
     state_file_name = "session.pp3"
-    supported_adjustment_names = ("exposure", "contrast", "saturation")
+    supported_adjustment_names = ("exposure", "contrast", "saturation", "orientation", "crop")
 
     def __init__(
         self,
@@ -179,13 +180,20 @@ class RawTherapeeBackend:
 
     def write_state_file(
         self,
-        source_file_name: str,
+        source: SourceImageInfo,
         adjustments: AdjustmentState,
         state_path: Path,
     ) -> None:
-        self._validate_adjustments(adjustments)
+        self._validate_adjustments(adjustments, source)
         state_path.parent.mkdir(parents=True, exist_ok=True)
-        state_path.write_text(build_pp3(adjustments), encoding="utf-8")
+        state_path.write_text(
+            build_pp3(
+                adjustments,
+                image_width=source.width,
+                image_height=source.height,
+            ),
+            encoding="utf-8",
+        )
 
     def render_preview(
         self,
@@ -194,7 +202,7 @@ class RawTherapeeBackend:
         target_path: Path,
         *,
         max_size: int | None = None,
-    ) -> None:
+    ) -> tuple[int, int] | None:
         self.ensure_available()
         target_path = target_path.resolve()
         target_path.parent.mkdir(parents=True, exist_ok=True)
@@ -208,18 +216,20 @@ class RawTherapeeBackend:
                 quality=self.preview_quality,
             )
             self._run(command)
+            rendered_size = _image_dimensions(temp_output)
 
             if max_size is not None:
                 self._resize_preview(temp_output, target_path, max_size=max_size)
             else:
                 temp_output.replace(target_path)
+            return rendered_size
 
     def render_export(
         self,
         source_path: Path,
         state_path: Path,
         target_path: Path,
-    ) -> None:
+    ) -> tuple[int, int] | None:
         self.ensure_available()
         target_path = target_path.resolve()
         target_path.parent.mkdir(parents=True, exist_ok=True)
@@ -230,17 +240,16 @@ class RawTherapeeBackend:
             quality=self.export_quality,
         )
         self._run(command)
+        return _image_dimensions(target_path)
 
-    def _validate_adjustments(self, adjustments: AdjustmentState) -> None:
+    def _validate_adjustments(self, adjustments: AdjustmentState, source: SourceImageInfo) -> None:
         unsupported: list[str] = []
-        if adjustments.orientation != 0:
-            unsupported.append("orientation")
-        if adjustments.crop is not None:
+        if adjustments.crop is not None and (source.width is None or source.height is None):
             unsupported.append("crop")
         if unsupported:
             raise ValidationError(
                 f"Adjustments not yet supported by {self.backend_id}: {', '.join(unsupported)}.",
-                hint="Use exposure, contrast, and saturation with the RawTherapee backend for now.",
+                hint="Create a session preview first so the backend can determine the developed image dimensions.",
             )
 
     def _base_command(
@@ -334,3 +343,13 @@ def _render_details(stdout: str, stderr: str) -> str:
         if part and part.strip()
     )
     return details or "Inspect backend output for more details."
+
+
+def _image_dimensions(path: Path) -> tuple[int, int] | None:
+    if Image is None:
+        return None
+    try:
+        with Image.open(path) as image:
+            return image.size
+    except OSError:
+        return None

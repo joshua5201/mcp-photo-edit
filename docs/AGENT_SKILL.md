@@ -19,7 +19,8 @@ Project naming note:
 ## Good Practices
 
 - Prefer small, incremental changes over large blind jumps.
-- Check `list_supported_adjustments` before assuming geometry or backend-specific controls are available.
+- Use `crop` values in normalized `0..1` coordinates.
+- Use `orientation` with quarter turns: `-90`, `0`, `90`, `180`.
 - Keep export separate from preview generation.
 - If a value is rejected, read the returned `hint` and retry with a bounded value.
 
@@ -29,7 +30,14 @@ Project naming note:
 {
   "exposure": 0.8,
   "contrast": 12,
-  "saturation": 8
+  "saturation": 8,
+  "orientation": 90,
+  "crop": {
+    "left": 0.1,
+    "top": 0.1,
+    "right": 0.9,
+    "bottom": 0.95
+  }
 }
 ```
 

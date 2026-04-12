@@ -3,7 +3,7 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
-from mcp_darktable.models import AdjustmentState, CropAdjustment
+from mcp_darktable.models import AdjustmentState, CropAdjustment, SourceImageInfo
 from mcp_darktable.render import DarktableBackend, RawTherapeeBackend
 
 
@@ -75,17 +75,56 @@ def test_rawtherapee_render_invokes_cli_with_pp3(monkeypatch, tmp_path: Path) ->
 def test_rawtherapee_rejects_unsupported_geometry_adjustments(tmp_path: Path) -> None:
     backend = RawTherapeeBackend()
     profile = tmp_path / "session.pp3"
+    source = SourceImageInfo(
+        input_path=str(tmp_path / "source.nef"),
+        file_name="source.nef",
+        suffix=".nef",
+        width=None,
+        height=None,
+    )
 
     try:
         backend.write_state_file(
-            "source.nef",
+            source,
             AdjustmentState(
-                orientation=90,
                 crop=CropAdjustment(left=0.1, top=0.1, right=0.9, bottom=0.9),
             ),
             profile,
         )
     except Exception as exc:  # noqa: BLE001
-        assert "not yet supported" in str(exc)
+        assert "Create a session preview first" in str(exc) or "Create a session preview first" in (getattr(exc, "hint", "") or "")
     else:  # pragma: no cover - defensive
-        raise AssertionError("Expected geometry adjustments to be rejected for RawTherapee")
+        raise AssertionError("Expected crop without dimensions to be rejected for RawTherapee")
+
+
+def test_rawtherapee_write_state_file_includes_rotation_and_crop(tmp_path: Path) -> None:
+    backend = RawTherapeeBackend()
+    profile = tmp_path / "session.pp3"
+    source = SourceImageInfo(
+        input_path=str(tmp_path / "source.nef"),
+        file_name="source.nef",
+        suffix=".nef",
+        width=4032,
+        height=6056,
+    )
+
+    backend.write_state_file(
+        source,
+        AdjustmentState(
+            exposure=1.0,
+            contrast=10.0,
+            saturation=5.0,
+            orientation=90,
+            crop=CropAdjustment(left=0.25, top=0.25, right=0.75, bottom=0.75),
+        ),
+        profile,
+    )
+
+    pp3 = profile.read_text(encoding="utf-8")
+    assert "[Coarse Transformation]" in pp3
+    assert "Rotate=90" in pp3
+    assert "[Crop]" in pp3
+    assert "X=1514" in pp3
+    assert "Y=1008" in pp3
+    assert "W=3028" in pp3
+    assert "H=2016" in pp3

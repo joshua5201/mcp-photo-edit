@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import shutil
+import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -154,16 +156,68 @@ class SourceImageInfo(BaseModel):
     input_path: str
     file_name: str
     suffix: str
+    width: int | None = None
+    height: int | None = None
 
     @classmethod
     def from_path(cls, input_path: Path) -> "SourceImageInfo":
         """Build image info from a resolved path."""
 
+        width: int | None = None
+        height: int | None = None
+        try:
+            from PIL import Image
+        except ImportError:  # pragma: no cover - optional import at runtime
+            Image = None
+
+        if Image is not None:
+            try:
+                with Image.open(input_path) as image:
+                    width, height = image.size
+            except OSError:
+                width = None
+                height = None
+
+        if width is None or height is None:
+            width, height = _exiftool_dimensions(input_path)
+
         return cls(
             input_path=str(input_path),
             file_name=input_path.name,
             suffix=input_path.suffix.lower(),
+            width=width,
+            height=height,
         )
+
+
+def _exiftool_dimensions(input_path: Path) -> tuple[int | None, int | None]:
+    executable = shutil.which("exiftool")
+    if executable is None:
+        return None, None
+
+    completed = subprocess.run(
+        [
+            executable,
+            "-s3",
+            "-ImageWidth",
+            "-ImageHeight",
+            str(input_path),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if completed.returncode != 0:
+        return None, None
+
+    lines = [line.strip() for line in completed.stdout.splitlines() if line.strip()]
+    if len(lines) < 2:
+        return None, None
+
+    try:
+        return int(lines[0]), int(lines[1])
+    except ValueError:
+        return None, None
 
 
 class SessionState(BaseModel):
