@@ -1,4 +1,4 @@
-"""Backend integrations for RawTherapee and darktable."""
+"""Backend integrations for RawTherapee."""
 
 from __future__ import annotations
 
@@ -11,8 +11,6 @@ from typing import Protocol
 from .errors import BackendUnavailableError, RenderFailedError, ValidationError
 from .models import AdjustmentState, SourceImageInfo
 from .pp3 import build_pp3
-from .xmp import build_sidecar
-
 try:
     from PIL import Image
 except ImportError:  # pragma: no cover - optional at import time, required at runtime for resizing
@@ -54,106 +52,6 @@ class RenderBackend(Protocol):
         target_path: Path,
     ) -> tuple[int, int] | None:
         """Render a final export."""
-
-
-class DarktableBackend:
-    """Render previews and exports through darktable-cli."""
-
-    backend_id = "darktable-cli"
-    state_file_name = "session.xmp"
-    supported_adjustment_names = (
-        "exposure",
-        "contrast",
-        "saturation",
-        "orientation",
-        "crop",
-    )
-
-    def __init__(self, executable: str = "darktable-cli") -> None:
-        self.executable = executable
-
-    def ensure_available(self) -> None:
-        if shutil.which(self.executable) is None:
-            raise BackendUnavailableError(self.executable)
-
-    def write_state_file(
-        self,
-        source: SourceImageInfo,
-        adjustments: AdjustmentState,
-        state_path: Path,
-    ) -> None:
-        state_path.parent.mkdir(parents=True, exist_ok=True)
-        state_path.write_text(
-            build_sidecar(source.file_name, adjustments),
-            encoding="utf-8",
-        )
-
-    def render_preview(
-        self,
-        source_path: Path,
-        state_path: Path,
-        target_path: Path,
-        *,
-        max_size: int | None = None,
-    ) -> tuple[int, int] | None:
-        return self._render(source_path, state_path, target_path, max_size=max_size)
-
-    def render_export(
-        self,
-        source_path: Path,
-        state_path: Path,
-        target_path: Path,
-    ) -> tuple[int, int] | None:
-        return self._render(source_path, state_path, target_path)
-
-    def _render(
-        self,
-        source_path: Path,
-        state_path: Path,
-        target_path: Path,
-        *,
-        max_size: int | None = None,
-    ) -> tuple[int, int] | None:
-        self.ensure_available()
-        target_path = target_path.resolve()
-        target_path.parent.mkdir(parents=True, exist_ok=True)
-
-        with tempfile.TemporaryDirectory(prefix="darktable-render-", dir=target_path.parent) as temp_dir:
-            temp_output_dir = Path(temp_dir)
-            out_ext = target_path.suffix.lstrip(".") or "jpg"
-
-            command = [
-                self.executable,
-                str(source_path),
-                str(state_path),
-                str(temp_output_dir),
-                "--out-ext",
-                out_ext,
-            ]
-            if max_size is not None:
-                command.extend(["--width", str(max_size), "--height", str(max_size)])
-
-            completed = subprocess.run(
-                command,
-                check=False,
-                capture_output=True,
-                text=True,
-            )
-            if completed.returncode != 0:
-                raise RenderFailedError(
-                    f"{self.executable} exited with status {completed.returncode}.",
-                    hint=_render_details(completed.stdout, completed.stderr),
-                )
-
-            rendered_files = sorted(path for path in temp_output_dir.iterdir() if path.is_file())
-            if not rendered_files:
-                raise RenderFailedError(
-                    f"{self.executable} completed without producing an output file.",
-                    hint="Check whether the input file format is supported by the local darktable build.",
-                )
-
-            rendered_files[-1].replace(target_path)
-            return _image_dimensions(target_path)
 
 
 class RawTherapeeBackend:
@@ -317,10 +215,8 @@ class RawTherapeeBackend:
 def build_backend_registry() -> dict[str, RenderBackend]:
     """Return the supported backend instances keyed by backend id."""
 
-    backends: dict[str, RenderBackend] = {}
-    for backend in (RawTherapeeBackend(), DarktableBackend()):
-        backends[backend.backend_id] = backend
-    return backends
+    backend = RawTherapeeBackend()
+    return {backend.backend_id: backend}
 
 
 def normalize_backend_name(name: str) -> str:
@@ -328,8 +224,6 @@ def normalize_backend_name(name: str) -> str:
 
     lowered = name.strip().lower()
     aliases = {
-        "darktable": "darktable-cli",
-        "darktable-cli": "darktable-cli",
         "rawtherapee": "rawtherapee-cli",
         "rawtherapee-cli": "rawtherapee-cli",
     }

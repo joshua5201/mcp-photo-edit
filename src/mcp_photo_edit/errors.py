@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 
-class DarktableMcpError(Exception):
+class PhotoEditError(Exception):
     """Base error carrying an agent-readable code and hint."""
 
     def __init__(self, code: str, message: str, hint: str | None = None) -> None:
@@ -13,7 +13,7 @@ class DarktableMcpError(Exception):
         self.hint = hint
 
 
-class SessionNotFoundError(DarktableMcpError):
+class SessionNotFoundError(PhotoEditError):
     """Raised when a session id cannot be resolved."""
 
     def __init__(self, session_id: str) -> None:
@@ -24,14 +24,14 @@ class SessionNotFoundError(DarktableMcpError):
         )
 
 
-class ValidationError(DarktableMcpError):
+class ValidationError(PhotoEditError):
     """Raised for invalid user-supplied values."""
 
     def __init__(self, message: str, hint: str | None = None) -> None:
         super().__init__(code="validation_error", message=message, hint=hint)
 
 
-class BackendUnavailableError(DarktableMcpError):
+class BackendUnavailableError(PhotoEditError):
     """Raised when a configured backend executable cannot be executed."""
 
     def __init__(self, executable: str) -> None:
@@ -42,7 +42,7 @@ class BackendUnavailableError(DarktableMcpError):
         )
 
 
-class RenderFailedError(DarktableMcpError):
+class RenderFailedError(PhotoEditError):
     """Raised when a backend returns a non-zero status or no file."""
 
     def __init__(self, message: str, hint: str | None = None) -> None:

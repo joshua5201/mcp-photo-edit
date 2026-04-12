@@ -83,7 +83,6 @@ class SessionManager:
             source=SourceImageInfo.from_path(source_path),
             workspace_dir=str(session_dir),
             state_path=str(state_path),
-            xmp_path=str(state_path) if backend.backend_id == "darktable-cli" else None,
             preview_path="",
             preview_max_size=preview_max_size,
             adjustments=initial_adjustments,

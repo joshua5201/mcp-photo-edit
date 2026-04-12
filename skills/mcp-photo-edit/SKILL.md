@@ -75,4 +75,4 @@ Use this skill when an agent should edit photos through the `photo-edit` MCP ser
 ## Notes
 
 - This skill assumes RawTherapee is the active backend.
-- The legacy `darktable-cli` backend is unstable and slated for removal.
+- The legacy `darktable-cli` backend has been removed.

@@ -7,7 +7,7 @@ from typing import TypeVar
 from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel
 
-from .errors import DarktableMcpError
+from .errors import PhotoEditError
 from .models import (
     AdjustmentPatch,
     ErrorInfo,
@@ -48,7 +48,7 @@ def create_server() -> FastMCP:
                 session_label=session_label,
             )
             return SessionEnvelope(session=session)
-        except DarktableMcpError as exc:
+        except PhotoEditError as exc:
             return _session_error(exc)
 
     @mcp.tool()
@@ -57,7 +57,7 @@ def create_server() -> FastMCP:
 
         try:
             return SessionEnvelope(session=session_manager.get_session(session_id))
-        except DarktableMcpError as exc:
+        except PhotoEditError as exc:
             return _session_error(exc)
 
     @mcp.tool()
@@ -83,7 +83,7 @@ def create_server() -> FastMCP:
                 can_redo=session.can_redo,
                 last_rendered_at=session.last_rendered_at,
             )
-        except DarktableMcpError as exc:
+        except PhotoEditError as exc:
             return PreviewResult(ok=False, error=_error_info(exc))
 
     @mcp.tool()
@@ -101,7 +101,7 @@ def create_server() -> FastMCP:
                 render_preview=render_preview,
             )
             return SessionEnvelope(session=session)
-        except DarktableMcpError as exc:
+        except PhotoEditError as exc:
             return _session_error(exc)
 
     @mcp.tool()
@@ -119,7 +119,7 @@ def create_server() -> FastMCP:
                 render_preview=render_preview,
             )
             return SessionEnvelope(session=session)
-        except DarktableMcpError as exc:
+        except PhotoEditError as exc:
             return _session_error(exc)
 
     @mcp.tool()
@@ -135,7 +135,7 @@ def create_server() -> FastMCP:
                 format=output.suffix.lstrip(".").lower(),
                 backend=session.backend,
             )
-        except DarktableMcpError as exc:
+        except PhotoEditError as exc:
             return ExportResult(ok=False, error=_error_info(exc))
 
     @mcp.tool()
@@ -151,7 +151,7 @@ def create_server() -> FastMCP:
                 render_preview=render_preview,
             )
             return SessionEnvelope(session=session)
-        except DarktableMcpError as exc:
+        except PhotoEditError as exc:
             return _session_error(exc)
 
     @mcp.tool()
@@ -167,7 +167,7 @@ def create_server() -> FastMCP:
                 render_preview=render_preview,
             )
             return SessionEnvelope(session=session)
-        except DarktableMcpError as exc:
+        except PhotoEditError as exc:
             return _session_error(exc)
 
     @mcp.tool()
@@ -181,9 +181,9 @@ def create_server() -> FastMCP:
     return mcp
 
 
-def _error_info(error: DarktableMcpError) -> ErrorInfo:
+def _error_info(error: PhotoEditError) -> ErrorInfo:
     return ErrorInfo(code=error.code, message=error.message, hint=error.hint)
 
 
-def _session_error(error: DarktableMcpError) -> SessionEnvelope:
+def _session_error(error: PhotoEditError) -> SessionEnvelope:
     return SessionEnvelope(ok=False, error=_error_info(error))

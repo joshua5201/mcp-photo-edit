@@ -13,7 +13,7 @@ This is an MVP implementation.
 Important backend notice:
 
 - `rawtherapee-cli` is the supported backend.
-- The legacy `darktable-cli` backend is not stable and will be removed in a future cleanup.
+- The legacy `darktable-cli` backend has been removed.
 
 Current focus:
 

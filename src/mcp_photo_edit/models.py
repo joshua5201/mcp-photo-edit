@@ -250,7 +250,6 @@ class SessionState(BaseModel):
     source: SourceImageInfo
     workspace_dir: str
     state_path: str | None = None
-    xmp_path: str | None = None
     preview_path: str
     preview_max_size: int = Field(default=1024, ge=64, le=4096)
     preview_history: list[PreviewArtifact] = Field(default_factory=list)
@@ -262,7 +261,7 @@ class SessionState(BaseModel):
     last_rendered_at: datetime | None = None
     backend: str = "rawtherapee-cli"
 
-    @field_validator("workspace_dir", "state_path", "xmp_path", "preview_path")
+    @field_validator("workspace_dir", "state_path", "preview_path")
     @classmethod
     def stringify_paths(cls, value: str | Path | None) -> str | None:
         """Persist paths as strings."""
@@ -275,8 +274,6 @@ class SessionState(BaseModel):
     def validate_history(self) -> "SessionState":
         """Normalize state and ensure the history cursor is valid."""
 
-        if self.state_path is None and self.xmp_path is not None:
-            self.state_path = self.xmp_path
         if not self.history:
             raise ValueError("history must contain at least one step")
         if self.history_index < 0 or self.history_index >= len(self.history):

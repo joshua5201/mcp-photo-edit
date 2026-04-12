@@ -7,7 +7,7 @@
 Current backend policy:
 
 - RawTherapee is the supported backend.
-- The legacy `darktable-cli` backend is not stable and is planned for removal.
+- The legacy `darktable-cli` backend has been removed.
 
 The design is intentionally opinionated around agent ergonomics:
 
@@ -27,7 +27,7 @@ The design is intentionally opinionated around agent ergonomics:
 ### Gaps in the original draft and the adopted fixes
 
 - Public API was too coupled to XMP internals.
-  Fix: expose a domain-level adjustment schema and keep XMP internal.
+  Fix: expose a domain-level adjustment schema and keep backend-native state internal.
 - Session lifecycle was missing.
   Fix: use `session_id` and persist state in a managed workspace.
 - Edit semantics were underspecified.
@@ -107,7 +107,7 @@ Returns the current state of an existing session.
 
 ### `apply_adjustments`
 
-Applies a partial adjustment patch to a session, validates it, writes the sidecar, and optionally re-renders the preview.
+Applies a partial adjustment patch to a session, validates it, writes the current `PP3`, and optionally re-renders the preview.
 
 ### `reset_adjustments`
 
