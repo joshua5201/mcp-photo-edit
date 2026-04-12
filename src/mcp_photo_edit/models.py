@@ -203,23 +203,16 @@ class AdjustmentState(BaseModel):
             raise ValueError("orientation must be one of -90, 0, 90, 180")
         return value
 
-    @model_validator(mode="after")
-    def normalize_manual_white_balance(self) -> "AdjustmentState":
-        """Materialize paired manual WB defaults when one control is set."""
-
-        if self.color_temperature is None and self.green_balance is None:
-            return self
-        if self.color_temperature is None:
-            self.color_temperature = 6504.0
-        if self.green_balance is None:
-            self.green_balance = 1.0
-        return self
-
     def apply_patch(self, patch: "AdjustmentPatch") -> "AdjustmentState":
         """Return a new state with only provided fields updated."""
 
         data = self.model_dump()
-        data.update(patch.model_dump(exclude_unset=True))
+        patch_data = patch.model_dump(exclude_unset=True)
+        if "color_temperature" in patch_data and "green_balance" not in patch_data and data["green_balance"] is None:
+            data["green_balance"] = 1.0
+        if "green_balance" in patch_data and "color_temperature" not in patch_data and data["color_temperature"] is None:
+            data["color_temperature"] = 6504.0
+        data.update(patch_data)
         return AdjustmentState.model_validate(data)
 
     def reset_fields(self, fields: list[str] | None = None) -> "AdjustmentState":

@@ -65,3 +65,12 @@ def test_manual_white_balance_normalizes_missing_pair_value() -> None:
 
     assert updated.green_balance == 1.08
     assert updated.color_temperature == 6504.0
+
+
+def test_manual_white_balance_reset_keeps_other_field_independent() -> None:
+    state = AdjustmentState(color_temperature=5200.0, green_balance=1.08)
+
+    reset = state.reset_fields(["green_balance"])
+
+    assert reset.color_temperature == 5200.0
+    assert reset.green_balance is None
