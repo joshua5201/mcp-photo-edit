@@ -28,7 +28,13 @@ Use this skill when an agent should edit photos through the `photo-edit` MCP ser
 5. Use `undo_adjustment` or `redo_adjustment` to move across committed edit steps when needed.
 6. Re-check the preview after each patch.
 7. Use `render_preview` whenever you want a fresh preview artifact for the current session state.
-8. Call `export_image` only when the preview looks correct.
+8. If operating in **Interactive Mode**, ask the user for confirmation before exporting. Otherwise, call `export_image` only when the preview matches the requested criteria.
+
+## Interactive Mode
+
+- If the user requests "interactive mode", you MUST NOT automatically call `export_image`.
+- Once you believe the edits are complete based on the preview, stop and ask the user for confirmation (e.g., using the `ask_user` tool or simply asking in the chat).
+- Only call `export_image` after the user has explicitly confirmed the preview is satisfactory.
 
 ## Preview History
 
