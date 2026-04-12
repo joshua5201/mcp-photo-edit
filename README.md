@@ -6,6 +6,21 @@ The server exposes a session-based editing workflow instead of raw sidecar manip
 
 Each session now also maintains an explicit undo / redo timeline in `session.json`. Semantic edit history is tracked separately from preview-render history.
 
+## Example: Hong Kong Vibrant Vibe (v0.1.0)
+
+This example demonstrates an agent-driven edit to achieve a "Hong Kong vibrant" look using Gemini 3 Flash.
+
+**Prompt:**
+> Adjust `demo/hk.jpg` to be more colorful, more Hong Kong vibrant, lively vibe. Crop / rotate the photo if you want. Export to `demo/hk_modified.jpg`
+
+| 1. Before | 2. After |
+| :--- | :--- |
+| ![Before](demo/hk.jpg) | ![After](demo/hk_modified.jpg) |
+
+**Model:** Gemini 3 Flash
+
+Check the [demo/](demo/) directory for full session details, including `session.json`, `PP3` sidecars, and intermediate previews in the `workspace/` folder.
+
 ## Status
 
 This is an MVP implementation.
