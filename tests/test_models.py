@@ -58,3 +58,10 @@ def test_adjustment_patch_supports_new_rawtherapee_fields() -> None:
     assert updated.green_balance == 1.03
     assert updated.highlights == 15.0
     assert updated.shadows == 22.0
+
+
+def test_manual_white_balance_normalizes_missing_pair_value() -> None:
+    updated = AdjustmentState().apply_patch(AdjustmentPatch(green_balance=1.08))
+
+    assert updated.green_balance == 1.08
+    assert updated.color_temperature == 6504.0

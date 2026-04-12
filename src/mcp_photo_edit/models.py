@@ -45,11 +45,11 @@ ADJUSTMENT_SPECS: dict[str, dict[str, Any]] = {
         "example": 90,
     },
     "rgb_mixer": {
-        "minimum": -500.0,
-        "maximum": 500.0,
+        "minimum": None,
+        "maximum": None,
         "default": None,
         "unit": "percent_triplets",
-        "description": "Per-output RGB channel mixer rows for red, green, and blue output channels.",
+        "description": "Per-output RGB channel mixer rows with `red`, `green`, and `blue` triplets in percentage units.",
         "example": {
             "red": [100.0, 0.0, 0.0],
             "green": [0.0, 95.0, 5.0],
@@ -202,6 +202,18 @@ class AdjustmentState(BaseModel):
         if value not in {-90, 0, 90, 180}:
             raise ValueError("orientation must be one of -90, 0, 90, 180")
         return value
+
+    @model_validator(mode="after")
+    def normalize_manual_white_balance(self) -> "AdjustmentState":
+        """Materialize paired manual WB defaults when one control is set."""
+
+        if self.color_temperature is None and self.green_balance is None:
+            return self
+        if self.color_temperature is None:
+            self.color_temperature = 6504.0
+        if self.green_balance is None:
+            self.green_balance = 1.0
+        return self
 
     def apply_patch(self, patch: "AdjustmentPatch") -> "AdjustmentState":
         """Return a new state with only provided fields updated."""
@@ -361,6 +373,7 @@ class SessionState(BaseModel):
     source: SourceImageInfo
     workspace_dir: str
     state_path: str | None = None
+    xmp_path: str | None = None
     preview_path: str
     preview_max_size: int = Field(default=1024, ge=64, le=4096)
     preview_history: list[PreviewArtifact] = Field(default_factory=list)
@@ -372,7 +385,7 @@ class SessionState(BaseModel):
     last_rendered_at: datetime | None = None
     backend: str = "rawtherapee-cli"
 
-    @field_validator("workspace_dir", "state_path", "preview_path")
+    @field_validator("workspace_dir", "state_path", "xmp_path", "preview_path")
     @classmethod
     def stringify_paths(cls, value: str | Path | None) -> str | None:
         """Persist paths as strings."""
@@ -385,6 +398,8 @@ class SessionState(BaseModel):
     def validate_history(self) -> "SessionState":
         """Normalize state and ensure the history cursor is valid."""
 
+        if self.state_path is None and self.xmp_path is not None:
+            self.state_path = self.xmp_path
         if not self.history:
             raise ValueError("history must contain at least one step")
         if self.history_index < 0 or self.history_index >= len(self.history):

@@ -76,3 +76,16 @@ def test_build_pp3_contains_rgb_mixer_denoise_white_balance_and_tone_blocks() ->
     assert "[Shadows & Highlights]" in pp3
     assert "Highlights=12" in pp3
     assert "Shadows=18" in pp3
+
+
+def test_build_pp3_uses_normalized_manual_white_balance_defaults() -> None:
+    pp3 = build_pp3(
+        AdjustmentState(green_balance=1.08),
+        image_width=4032,
+        image_height=6056,
+    )
+
+    assert "[White Balance]" in pp3
+    assert "Setting=Custom" in pp3
+    assert "Temperature=6504" in pp3
+    assert "Green=1.08" in pp3
