@@ -206,12 +206,12 @@ gemini skills list
 ## Typical Agent Workflow
 
 1. Create a session from an input image.
-2. Inspect the returned preview path and current adjustment state.
+2. Inspect the returned preview image and current adjustment state.
 3. Apply one or more adjustments.
 4. Re-check the preview.
 5. Export a final image explicitly.
 
-See [docs/AGENT_SKILL.md](docs/AGENT_SKILL.md) for an agent-facing usage guide.
+See [SKILL.md](skills/mcp-photo-edit/SKILL.md) for an agent-facing usage guide.
 
 ## Adjustment Model
 
