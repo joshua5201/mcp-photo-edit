@@ -40,11 +40,6 @@ Note: The original NEF file is not included in the repository. The "Before" imag
 
 This is an MVP implementation.
 
-Important backend notice:
-
-- `rawtherapee-cli` is the supported backend.
-- The legacy `darktable-cli` backend has been removed.
-
 Current focus:
 
 - session-based editing flow
@@ -52,7 +47,7 @@ Current focus:
 - `rawtherapee-cli` preview and export
 - RAW and common raster inputs when supported by the local RawTherapee build
 
-Not in scope yet:
+Not in scope:
 
 - local masks
 - healing / AI retouch
@@ -84,21 +79,7 @@ Verify `rawtherapee-cli`:
 rawtherapee-cli -v
 ```
 
-## Important Compatibility Note
-
-RAW support depends on the local RawTherapee build and its bundled RAW decoders. A file extension being supported in principle does not guarantee that every camera or compression variant will decode on every machine. When diagnosing unsupported RAW files, check the installed RawTherapee version and the camera / compression mode used by the source file.
-
-**Note on Nikon RAW:** Some compressed Nikon RAW formats (e.g., High Efficiency / HE* compression) may not be supported by the underlying libraries in current RawTherapee builds. If you encounter issues with Nikon files, try using uncompressed RAW or Lossless Compressed modes if available in-camera.
-
-## Running The Server
-
-Start the server over stdio:
-
-```bash
-uv run mcp-photo-edit
-```
-
-## MCP Client Configuration
+## Quickstart
 
 Example stdio configurations
 
@@ -219,6 +200,13 @@ Verify the skill is available:
 gemini skills list
 ```
 
+## Compatibility Note
+
+RAW support depends on the local RawTherapee build and its bundled RAW decoders. A file extension being supported in principle does not guarantee that every camera or compression variant will decode on every machine. When diagnosing unsupported RAW files, check the installed RawTherapee version and the camera / compression mode used by the source file.
+
+**Note on Nikon RAW:** Some compressed Nikon RAW formats (e.g., High Efficiency / HE* compression) may not be supported by the underlying libraries in current RawTherapee builds. If you encounter issues with Nikon files, try using uncompressed RAW or Lossless Compressed modes if available in-camera.
+
+
 ## Available Tools
 
 - `create_edit_session`
@@ -310,6 +298,13 @@ Run tests:
 ```bash
 pytest
 ```
+
+Start the server over stdio:
+
+```bash
+uv run mcp-photo-edit
+```
+
 
 ## Disclaimers
 
