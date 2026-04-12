@@ -258,8 +258,8 @@ class SessionState(BaseModel):
         return str(value)
 
     @model_validator(mode="after")
-    def backfill_state_path(self) -> "SessionState":
-        """Load older manifests that only persisted xmp_path."""
+    def ensure_compatibility(self) -> "SessionState":
+        """Load older manifests that only persisted xmp_path or missing preview maps."""
 
         if self.state_path is None and self.xmp_path is not None:
             self.state_path = self.xmp_path

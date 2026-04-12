@@ -15,7 +15,17 @@ Project name:
 3. Call `list_supported_adjustments` if you need ranges or semantics.
 4. Apply a small patch with `apply_adjustments`.
 5. Re-check the preview and continue iterating.
-6. Call `export_image` only when the preview looks correct.
+6. Use `render_preview` with `mode="baseline"` if you want to see the original image without any edits.
+7. Use `render_preview` with `mode="rawtherapee_default"` to see the image with the user's default RawTherapee profile.
+8. Call `export_image` only when the preview looks correct.
+
+## Preview Modes
+
+The `render_preview` tool supports several modes:
+
+- `current` (default): Renders using the current session adjustments.
+- `baseline`: Renders the original source image without any session edits.
+- `rawtherapee_default`: Renders using the local user's configured default RawTherapee profile. This mode is non-deterministic as it depends on machine-specific configuration.
 
 ## Good Practices
 

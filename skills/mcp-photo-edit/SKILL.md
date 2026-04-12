@@ -26,7 +26,14 @@ Use this skill when an agent should edit photos through the `photo-edit` MCP ser
 3. Use `list_supported_adjustments` if ranges or semantics are unclear.
 4. Apply small patches with `apply_adjustments`.
 5. Re-check the preview after each patch.
-6. Call `export_image` only when the preview looks correct.
+6. Use `render_preview` to regenerate a preview, for example, to see the `baseline` image.
+7. Call `export_image` only when the preview looks correct.
+
+## Preview Modes
+
+- `current` (default): Renders using the current session adjustments.
+- `baseline`: Renders the source image without any edits.
+- `rawtherapee_default`: Renders using the user's default RawTherapee profile. Non-deterministic and machine-specific.
 
 ## Adjustment Notes
 

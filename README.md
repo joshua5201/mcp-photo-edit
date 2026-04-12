@@ -197,6 +197,7 @@ gemini skills list
 
 - `create_edit_session`
 - `get_edit_session`
+- `render_preview`
 - `apply_adjustments`
 - `reset_adjustments`
 - `export_image`
