@@ -32,18 +32,18 @@ class ValidationError(DarktableMcpError):
 
 
 class BackendUnavailableError(DarktableMcpError):
-    """Raised when darktable-cli cannot be executed."""
+    """Raised when a configured backend executable cannot be executed."""
 
     def __init__(self, executable: str) -> None:
         super().__init__(
             code="backend_unavailable",
             message=f"Required backend executable '{executable}' is not available.",
-            hint="Install darktable-cli and ensure it is on PATH.",
+            hint=f"Install {executable} and ensure it is on PATH.",
         )
 
 
 class RenderFailedError(DarktableMcpError):
-    """Raised when darktable-cli returns a non-zero status or no file."""
+    """Raised when a backend returns a non-zero status or no file."""
 
     def __init__(self, message: str, hint: str | None = None) -> None:
         super().__init__(code="render_failed", message=message, hint=hint)

@@ -5,12 +5,13 @@ build-backend = "hatchling.build"
 [project]
 name = "mcp-darktable"
 version = "0.1.0"
-description = "MCP server for session-based photo editing with darktable-cli"
+description = "MCP server for session-based photo editing with pluggable RAW backends"
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.12"
 dependencies = [
   "mcp[cli]>=1.0,<2",
+  "Pillow>=10,<12",
   "pydantic>=2.7,<3",
 ]
 

@@ -100,12 +100,13 @@ def create_server() -> FastMCP:
         """Export the current session state to a final output path."""
 
         try:
+            session = session_manager.get_session(session_id)
             output = session_manager.export_image(session_id, output_path)
             return ExportResult(
                 session_id=session_id,
                 output_path=str(output),
                 format=output.suffix.lstrip(".").lower(),
-                backend="darktable-cli",
+                backend=session.backend,
             )
         except DarktableMcpError as exc:
             return ExportResult(ok=False, error=_error_info(exc))

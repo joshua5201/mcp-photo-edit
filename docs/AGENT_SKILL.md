@@ -2,6 +2,11 @@
 
 Use this MCP as an iterative editor, not as a one-shot prompt sink.
 
+Project naming note:
+
+- Public name: `mcp-photo-edit`
+- Current Python module and CLI entrypoint remain `mcp_darktable`
+
 ## Recommended Flow
 
 1. Call `create_edit_session` with the source image path.
@@ -14,8 +19,7 @@ Use this MCP as an iterative editor, not as a one-shot prompt sink.
 ## Good Practices
 
 - Prefer small, incremental changes over large blind jumps.
-- Use crop values in normalized `0..1` coordinates.
-- Use `orientation` with quarter turns: `-90`, `0`, `90`, `180`.
+- Check `list_supported_adjustments` before assuming geometry or backend-specific controls are available.
 - Keep export separate from preview generation.
 - If a value is rejected, read the returned `hint` and retry with a bounded value.
 
@@ -25,14 +29,7 @@ Use this MCP as an iterative editor, not as a one-shot prompt sink.
 {
   "exposure": 0.8,
   "contrast": 12,
-  "saturation": 8,
-  "orientation": 0,
-  "crop": {
-    "left": 0.1,
-    "top": 0.1,
-    "right": 0.9,
-    "bottom": 0.95
-  }
+  "saturation": 8
 }
 ```
 

@@ -1,8 +1,8 @@
-# mcp-darktable Design
+# mcp-photo-edit Design
 
 ## Summary
 
-`mcp-darktable` is an MCP server for agent-driven photo editing. The public contract is a stable, structured edit schema and a session-based workflow. The server translates those edits into native darktable XMP sidecars internally and renders them through `darktable-cli`.
+`mcp-photo-edit` is the proposed public name for this MCP server for agent-driven photo editing. The current codebase still uses `mcp-darktable` / `mcp_darktable` identifiers during the migration. The public contract is a stable, structured edit schema and a session-based workflow. The server currently uses RawTherapee as the default backend and keeps backend-specific state internal. A darktable backend remains available during the transition.
 
 The design is intentionally opinionated around agent ergonomics:
 
@@ -136,10 +136,10 @@ The adapter writes native `darktable:*` history entries. The initial MVP only ex
 - validation
 - merge and reset behavior
 
-### XMP Adapter Layer
+### Backend State Adapter Layer
 
-- converts the domain schema into sidecar content
-- keeps XMP details out of the public API
+- converts the domain schema into backend-native state such as RawTherapee `PP3` or darktable XMP
+- keeps sidecar details out of the public API
 
 ### Render Backend Layer
 

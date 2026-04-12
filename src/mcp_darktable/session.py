@@ -18,8 +18,7 @@ from .models import (
     SourceImageInfo,
     utc_now,
 )
-from .render import DarktableCliRenderer
-from .xmp import build_sidecar
+from .render import RenderBackend, build_backend_registry, normalize_backend_name
 
 
 class SessionManager:
@@ -28,11 +27,23 @@ class SessionManager:
     def __init__(
         self,
         workspace_root: Path | None = None,
-        renderer: DarktableCliRenderer | None = None,
+        backend: RenderBackend | None = None,
     ) -> None:
         default_root = Path(os.environ.get("MCP_DARKTABLE_WORKDIR", ".mcp-darktable"))
         self.workspace_root = (workspace_root or default_root).resolve()
-        self.renderer = renderer or DarktableCliRenderer()
+        if backend is not None:
+            self.backends = {backend.backend_id: backend}
+            self.default_backend_id = backend.backend_id
+        else:
+            self.backends = build_backend_registry()
+            configured_backend = os.environ.get("MCP_DARKTABLE_BACKEND", "rawtherapee-cli")
+            self.default_backend_id = normalize_backend_name(configured_backend)
+            if self.default_backend_id not in self.backends:
+                supported = ", ".join(sorted(self.backends))
+                raise ValidationError(
+                    f"Unsupported backend '{configured_backend}'.",
+                    hint=f"Use one of: {supported}.",
+                )
         self.workspace_root.mkdir(parents=True, exist_ok=True)
 
     def create_session(
@@ -48,17 +59,21 @@ class SessionManager:
         session_id = uuid.uuid4().hex[:12]
         session_dir = self.workspace_root / session_id
         session_dir.mkdir(parents=True, exist_ok=False)
+        backend = self.backends[self.default_backend_id]
+        state_path = session_dir / backend.state_file_name
 
         session = SessionState(
             session_id=session_id,
             session_label=session_label,
             source=SourceImageInfo.from_path(source_path),
             workspace_dir=str(session_dir),
-            xmp_path=str(session_dir / "session.xmp"),
+            state_path=str(state_path),
+            xmp_path=str(state_path) if backend.backend_id == "darktable-cli" else None,
             preview_path=str(session_dir / "preview.jpg"),
             preview_max_size=preview_max_size,
+            backend=backend.backend_id,
         )
-        self._write_sidecar(session)
+        self._write_state(session)
         self._render_preview(session)
         self._save_session(session)
         return session
@@ -86,7 +101,7 @@ class SessionManager:
         except PydanticValidationError as exc:
             raise ValidationError(str(exc)) from exc
         session.touch()
-        self._write_sidecar(session)
+        self._write_state(session)
         if render_preview:
             self._render_preview(session)
         self._save_session(session)
@@ -113,7 +128,7 @@ class SessionManager:
         session = self.get_session(session_id)
         session.adjustments = session.adjustments.reset_fields(fields)
         session.touch()
-        self._write_sidecar(session)
+        self._write_state(session)
         if render_preview:
             self._render_preview(session)
         self._save_session(session)
@@ -124,8 +139,9 @@ class SessionManager:
 
         session = self.get_session(session_id)
         output = Path(output_path).expanduser().resolve()
-        xmp_path = Path(session.xmp_path) if session.adjustments != session.adjustments.__class__() else None
-        self.renderer.render(Path(session.source.input_path), xmp_path, output)
+        backend = self._backend_for_session(session)
+        state_path = self._state_path(session)
+        backend.render_export(Path(session.source.input_path), state_path, output)
         session.touch()
         session.last_rendered_at = utc_now()
         self._save_session(session)
@@ -134,21 +150,25 @@ class SessionManager:
     def list_supported_adjustments(self) -> list[AdjustmentSpec]:
         """Return runtime-discoverable adjustment metadata."""
 
+        backend = self.backends[self.default_backend_id]
+        supported = set(backend.supported_adjustment_names)
         specs = [
             AdjustmentSpec(name=name, **spec)
             for name, spec in ADJUSTMENT_SPECS.items()
+            if name in supported
         ]
-        specs.append(
-            AdjustmentSpec(
-                name="crop",
-                minimum=0.0,
-                maximum=1.0,
-                default=None,
-                unit="normalized_box",
-                description="Normalized crop box with left, top, right, and bottom values.",
-                example={"left": 0.1, "top": 0.1, "right": 0.9, "bottom": 0.9},
+        if "crop" in supported:
+            specs.append(
+                AdjustmentSpec(
+                    name="crop",
+                    minimum=0.0,
+                    maximum=1.0,
+                    default=None,
+                    unit="normalized_box",
+                    description="Normalized crop box with left, top, right, and bottom values.",
+                    example={"left": 0.1, "top": 0.1, "right": 0.9, "bottom": 0.9},
+                )
             )
-        )
         return specs
 
     def _resolve_source(self, input_path: str) -> Path:
@@ -163,22 +183,41 @@ class SessionManager:
     def _manifest_path(self, session_id: str) -> Path:
         return self.workspace_root / session_id / "session.json"
 
-    def _write_sidecar(self, session: SessionState) -> None:
-        sidecar_path = Path(session.xmp_path)
-        sidecar_path.write_text(
-            build_sidecar(session.source.file_name, session.adjustments),
-            encoding="utf-8",
+    def _write_state(self, session: SessionState) -> None:
+        backend = self._backend_for_session(session)
+        backend.write_state_file(
+            session.source.file_name,
+            session.adjustments,
+            self._state_path(session),
         )
 
     def _render_preview(self, session: SessionState) -> None:
-        xmp_path = Path(session.xmp_path) if session.adjustments != session.adjustments.__class__() else None
-        self.renderer.render(
+        backend = self._backend_for_session(session)
+        backend.render_preview(
             Path(session.source.input_path),
-            xmp_path,
+            self._state_path(session),
             Path(session.preview_path),
             max_size=session.preview_max_size,
         )
         session.last_rendered_at = utc_now()
+
+    def _state_path(self, session: SessionState) -> Path:
+        if not session.state_path:
+            raise ValidationError(
+                f"Session '{session.session_id}' is missing backend state.",
+                hint="Recreate the session or repair the session manifest.",
+            )
+        return Path(session.state_path)
+
+    def _backend_for_session(self, session: SessionState) -> RenderBackend:
+        backend = self.backends.get(session.backend)
+        if backend is None:
+            supported = ", ".join(sorted(self.backends))
+            raise ValidationError(
+                f"Session backend '{session.backend}' is not configured.",
+                hint=f"Available backends: {supported}.",
+            )
+        return backend
 
     def _save_session(self, session: SessionState) -> None:
         manifest_path = self._manifest_path(session.session_id)

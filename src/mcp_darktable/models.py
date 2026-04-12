@@ -173,21 +173,32 @@ class SessionState(BaseModel):
     session_label: str | None = None
     source: SourceImageInfo
     workspace_dir: str
-    xmp_path: str
+    state_path: str | None = None
+    xmp_path: str | None = None
     preview_path: str
     preview_max_size: int = Field(default=1024, ge=64, le=4096)
     adjustments: AdjustmentState = Field(default_factory=AdjustmentState)
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
     last_rendered_at: datetime | None = None
-    backend: str = "darktable-cli"
+    backend: str = "rawtherapee-cli"
 
-    @field_validator("workspace_dir", "xmp_path", "preview_path")
+    @field_validator("workspace_dir", "state_path", "xmp_path", "preview_path")
     @classmethod
-    def stringify_paths(cls, value: str | Path) -> str:
+    def stringify_paths(cls, value: str | Path | None) -> str | None:
         """Persist paths as strings."""
 
+        if value is None:
+            return None
         return str(value)
+
+    @model_validator(mode="after")
+    def backfill_state_path(self) -> "SessionState":
+        """Load older manifests that only persisted xmp_path."""
+
+        if self.state_path is None and self.xmp_path is not None:
+            self.state_path = self.xmp_path
+        return self
 
     def touch(self) -> None:
         """Refresh the update timestamp."""
