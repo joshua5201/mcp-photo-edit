@@ -5,10 +5,19 @@ from __future__ import annotations
 import shutil
 import subprocess
 from datetime import UTC, datetime
+from enum import Enum
 from pathlib import Path
 from typing import Any
 
 from pydantic import BaseModel, Field, field_validator, model_validator
+
+class RenderMode(str, Enum):
+    """Supported preview rendering modes."""
+
+    CURRENT = "current"
+    BASELINE = "baseline"
+    RAWTHERAPEE_DEFAULT = "rawtherapee_default"
+
 
 ADJUSTMENT_SPECS: dict[str, dict[str, Any]] = {
     "exposure": {
@@ -231,6 +240,8 @@ class SessionState(BaseModel):
     xmp_path: str | None = None
     preview_path: str
     preview_max_size: int = Field(default=1024, ge=64, le=4096)
+    preview_mode: RenderMode = RenderMode.CURRENT
+    previews: dict[RenderMode, str] = Field(default_factory=dict)
     adjustments: AdjustmentState = Field(default_factory=AdjustmentState)
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
@@ -252,6 +263,8 @@ class SessionState(BaseModel):
 
         if self.state_path is None and self.xmp_path is not None:
             self.state_path = self.xmp_path
+        if self.preview_path and not self.previews:
+            self.previews[RenderMode.CURRENT] = self.preview_path
         return self
 
     def touch(self) -> None:
@@ -266,6 +279,17 @@ class SessionEnvelope(BaseModel):
     ok: bool = True
     session: SessionState | None = None
     warnings: list[str] = Field(default_factory=list)
+    error: ErrorInfo | None = None
+
+
+class PreviewResult(BaseModel):
+    """Tool response for preview rendering."""
+
+    ok: bool = True
+    session_id: str | None = None
+    preview_path: str | None = None
+    mode: RenderMode | None = None
+    last_rendered_at: datetime | None = None
     error: ErrorInfo | None = None
 
 

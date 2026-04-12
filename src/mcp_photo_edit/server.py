@@ -12,6 +12,8 @@ from .models import (
     AdjustmentPatch,
     ErrorInfo,
     ExportResult,
+    PreviewResult,
+    RenderMode,
     SessionEnvelope,
     SupportedAdjustmentsResult,
 )
@@ -58,6 +60,29 @@ def create_server() -> FastMCP:
             return SessionEnvelope(session=session_manager.get_session(session_id))
         except DarktableMcpError as exc:
             return _session_error(exc)
+
+    @mcp.tool()
+    def render_preview(
+        session_id: str,
+        mode: RenderMode = RenderMode.CURRENT,
+        preview_max_size: int | None = None,
+    ) -> PreviewResult:
+        """Explicitly (re)render a session preview."""
+
+        try:
+            session = session_manager.render_preview(
+                session_id,
+                mode=mode,
+                preview_max_size=preview_max_size,
+            )
+            return PreviewResult(
+                session_id=session.session_id,
+                preview_path=session.preview_path,
+                mode=session.preview_mode,
+                last_rendered_at=session.last_rendered_at,
+            )
+        except DarktableMcpError as exc:
+            return PreviewResult(ok=False, error=_error_info(exc))
 
     @mcp.tool()
     def apply_adjustments(

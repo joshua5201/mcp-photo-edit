@@ -3,7 +3,12 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
-from mcp_photo_edit.models import AdjustmentState, CropAdjustment, SourceImageInfo
+from mcp_photo_edit.models import (
+    AdjustmentState,
+    CropAdjustment,
+    RenderMode,
+    SourceImageInfo,
+)
 from mcp_photo_edit.render import DarktableBackend, RawTherapeeBackend
 
 
@@ -128,3 +133,39 @@ def test_rawtherapee_write_state_file_includes_rotation_and_crop(tmp_path: Path)
     assert "Y=1008" in pp3
     assert "W=3028" in pp3
     assert "H=2016" in pp3
+
+
+def test_rawtherapee_render_modes(monkeypatch, tmp_path: Path) -> None:
+    commands: list[list[str]] = []
+
+    def fake_run(command: list[str], **kwargs):
+        commands.append(command)
+        output_path = Path(command[2])
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_bytes(b"jpg")
+        return subprocess.CompletedProcess(command, 0, stdout="", stderr="")
+
+    monkeypatch.setattr("mcp_photo_edit.render.shutil.which", lambda _: "/usr/bin/rawtherapee-cli")
+    monkeypatch.setattr("mcp_photo_edit.render.subprocess.run", fake_run)
+
+    source = tmp_path / "source.nef"
+    profile = tmp_path / "session.pp3"
+    target = tmp_path / "preview.jpg"
+    source.write_text("raw", encoding="utf-8")
+    profile.write_text("[Exposure]\nCompensation=0\n", encoding="utf-8")
+
+    backend = RawTherapeeBackend()
+
+    # Baseline mode
+    backend.render_preview(source, profile, target, mode=RenderMode.BASELINE)
+    assert "-p" not in commands[-1]
+    assert "-d" not in commands[-1]
+
+    # Default mode
+    backend.render_preview(source, profile, target, mode=RenderMode.RAWTHERAPEE_DEFAULT)
+    assert "-d" in commands[-1]
+    assert "-p" not in commands[-1]
+
+    # Current mode (explicit)
+    backend.render_preview(source, profile, target, mode=RenderMode.CURRENT)
+    assert "-p" in commands[-1]

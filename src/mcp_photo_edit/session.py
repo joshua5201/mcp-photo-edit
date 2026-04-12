@@ -14,6 +14,7 @@ from .models import (
     RESETTABLE_FIELDS,
     AdjustmentPatch,
     AdjustmentSpec,
+    RenderMode,
     SessionState,
     SourceImageInfo,
     utc_now,
@@ -152,6 +153,23 @@ class SessionManager:
         self._save_session(session)
         return output
 
+    def render_preview(
+        self,
+        session_id: str,
+        *,
+        mode: RenderMode = RenderMode.CURRENT,
+        preview_max_size: int | None = None,
+    ) -> SessionState:
+        """Explicitly (re)render a session preview."""
+
+        session = self.get_session(session_id)
+        if preview_max_size is not None:
+            session.preview_max_size = preview_max_size
+
+        self._render_preview(session, mode=mode)
+        self._save_session(session)
+        return session
+
     def list_supported_adjustments(self) -> list[AdjustmentSpec]:
         """Return runtime-discoverable adjustment metadata."""
 
@@ -196,14 +214,26 @@ class SessionManager:
             self._state_path(session),
         )
 
-    def _render_preview(self, session: SessionState) -> None:
+    def _render_preview(self, session: SessionState, mode: RenderMode = RenderMode.CURRENT) -> None:
         backend = self._backend_for_session(session)
+
+        if mode == RenderMode.CURRENT:
+            target_path = Path(session.workspace_dir) / "preview.jpg"
+        else:
+            target_path = Path(session.workspace_dir) / f"preview-{mode.value}.jpg"
+
         rendered_size = backend.render_preview(
             Path(session.source.input_path),
-            self._state_path(session),
-            Path(session.preview_path),
+            self._state_path(session) if mode == RenderMode.CURRENT else None,
+            target_path,
             max_size=session.preview_max_size,
+            mode=mode,
         )
+
+        session.preview_mode = mode
+        session.preview_path = str(target_path)
+        session.previews[mode] = str(target_path)
+
         if rendered_size is not None and (
             session.source.width is None
             or session.source.height is None
