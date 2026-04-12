@@ -8,6 +8,7 @@ This file is a fast handoff for future work on `mcp-photo-edit`.
 - Public package / module: `mcp_photo_edit`
 - Public CLI entrypoint: `mcp-photo-edit`
 - Current supported backend: RawTherapee via `rawtherapee-cli`
+- Repo also ships a reusable skill at `skills/mcp-photo-edit`
 
 ## Backend Status
 

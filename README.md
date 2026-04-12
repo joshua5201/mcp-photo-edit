@@ -102,6 +102,30 @@ Verify the server is registered:
 codex mcp list
 ```
 
+Project guidance for Codex:
+
+- This repo includes project-scoped guidance in `AGENTS.md`.
+- This repo also ships an installable reusable skill at `skills/mcp-photo-edit`.
+
+Install the reusable skill manually by linking or copying it into Codex's skill directory.
+`$CODEX_HOME` typically defaults to `~/.codex`.
+
+Link it:
+
+```bash
+mkdir -p ~/.codex/skills
+ln -s <repo-path>/skills/mcp-photo-edit ~/.codex/skills/mcp-photo-edit
+```
+
+Or copy it:
+
+```bash
+mkdir -p ~/.codex/skills
+cp -R <repo-path>/skills/mcp-photo-edit ~/.codex/skills/mcp-photo-edit
+```
+
+Codex CLI does not currently expose a dedicated `skills install` subcommand, so the skill-directory install is the supported path.
+
 Recommended `AGENTS.md` snippet for better tool selection:
 
 ```md
@@ -147,6 +171,26 @@ If Gemini shows the stdio server as disconnected, trust the current folder first
 
 ```bash
 gemini trust
+```
+
+Gemini CLI also supports installing the reusable skill bundled with this repo.
+
+Install from a local path:
+
+```bash
+gemini skills install <repo-path>/skills/mcp-photo-edit --scope user
+```
+
+For active local development, link it instead so updates in the repo are reflected immediately:
+
+```bash
+gemini skills link <repo-path>/skills/mcp-photo-edit --scope user
+```
+
+Verify the skill is available:
+
+```bash
+gemini skills list
 ```
 
 ## Available Tools

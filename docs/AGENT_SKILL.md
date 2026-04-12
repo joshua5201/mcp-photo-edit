@@ -6,6 +6,7 @@ Project name:
 
 - `mcp-photo-edit`
 - Python module: `mcp_photo_edit`
+- Reusable skill path: `skills/mcp-photo-edit`
 
 ## Recommended Flow
 
