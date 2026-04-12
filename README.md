@@ -33,12 +33,19 @@ Not in scope yet:
 ## Requirements
 
 - Python 3.12+
+- `uv` for the easiest local install and run workflow
 - `rawtherapee-cli` on `PATH`
 
-Install the project:
+Install the project with `uv`:
 
 ```bash
-python3 -m pip install -e .
+uv sync
+```
+
+For development, include the optional test dependency:
+
+```bash
+uv sync --extra dev
 ```
 
 Verify `rawtherapee-cli`:
@@ -58,7 +65,7 @@ RAW support depends on the local RawTherapee build and its bundled RAW decoders.
 Start the server over stdio:
 
 ```bash
-python3 -m mcp_photo_edit
+uv run mcp-photo-edit
 ```
 
 ## MCP Client Configuration
@@ -69,8 +76,8 @@ Example stdio configuration:
 {
   "mcpServers": {
     "photo-edit": {
-      "command": "python3",
-      "args": ["-m", "mcp_photo_edit"],
+      "command": "uv",
+      "args": ["run", "mcp-photo-edit"],
       "env": {
         "MCP_PHOTO_EDIT_WORKDIR": "/absolute/path/to/.mcp-photo-edit",
         "MCP_PHOTO_EDIT_BACKEND": "rawtherapee-cli"
@@ -86,8 +93,8 @@ Add this block:
 
 ```toml
 [mcp_servers.photo_edit]
-command = "python3"
-args = ["-m", "mcp_photo_edit"]
+command = "uv"
+args = ["run", "mcp-photo-edit"]
 
 [mcp_servers.photo_edit.env]
 MCP_PHOTO_EDIT_WORKDIR = "/absolute/path/to/.mcp-photo-edit"
@@ -97,7 +104,7 @@ MCP_PHOTO_EDIT_BACKEND = "rawtherapee-cli"
 If you prefer to add it from the CLI instead of editing TOML manually:
 
 ```bash
-codex mcp add photo-edit --env MCP_PHOTO_EDIT_WORKDIR=/absolute/path/to/.mcp-photo-edit --env MCP_PHOTO_EDIT_BACKEND=rawtherapee-cli -- python3 -m mcp_photo_edit
+codex mcp add photo-edit --env MCP_PHOTO_EDIT_WORKDIR=/absolute/path/to/.mcp-photo-edit --env MCP_PHOTO_EDIT_BACKEND=rawtherapee-cli -- uv run mcp-photo-edit
 ```
 
 Verify the server is registered:
@@ -144,8 +151,8 @@ Add this block:
 {
   "mcpServers": {
     "photo-edit": {
-      "command": "python3",
-      "args": ["-m", "mcp_photo_edit"],
+      "command": "uv",
+      "args": ["run", "mcp-photo-edit"],
       "env": {
         "MCP_PHOTO_EDIT_WORKDIR": "/absolute/path/to/.mcp-photo-edit",
         "MCP_PHOTO_EDIT_BACKEND": "rawtherapee-cli"
@@ -160,7 +167,7 @@ Add this block:
 Or add it from the CLI. This example writes to user config instead of project-local config:
 
 ```bash
-gemini mcp add --scope user --transport stdio --env MCP_PHOTO_EDIT_WORKDIR=/absolute/path/to/.mcp-photo-edit --env MCP_PHOTO_EDIT_BACKEND=rawtherapee-cli --timeout 30000 --trust photo-edit python3 -m mcp_photo_edit
+gemini mcp add --scope user --transport stdio --env MCP_PHOTO_EDIT_WORKDIR=/absolute/path/to/.mcp-photo-edit --env MCP_PHOTO_EDIT_BACKEND=rawtherapee-cli --timeout 30000 --trust photo-edit uv run mcp-photo-edit
 ```
 
 If you omit `--scope user`, Gemini CLI writes the MCP entry to project-local config by default.
@@ -269,7 +276,7 @@ docs/
 Install dev dependencies:
 
 ```bash
-python3 -m pip install -e .[dev]
+uv sync --extra dev
 ```
 
 Run tests:
