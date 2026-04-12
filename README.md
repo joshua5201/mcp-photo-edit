@@ -72,6 +72,81 @@ Example stdio configuration:
 }
 ```
 
+### Codex CLI
+
+Codex reads MCP configuration from `~/.codex/config.toml`.
+
+Add this block:
+
+```toml
+[mcp_servers.darktable]
+command = "python3"
+args = ["-m", "mcp_darktable"]
+
+[mcp_servers.darktable.env]
+MCP_DARKTABLE_WORKDIR = "/absolute/path/to/.mcp-darktable"
+```
+
+If you prefer to add it from the CLI instead of editing TOML manually:
+
+```bash
+codex mcp add darktable --env MCP_DARKTABLE_WORKDIR=/absolute/path/to/.mcp-darktable -- python3 -m mcp_darktable
+```
+
+Verify the server is registered:
+
+```bash
+codex mcp list
+```
+
+Recommended `AGENTS.md` snippet for better tool selection:
+
+```md
+Use the `darktable` MCP server for photo-editing tasks. Create an edit session first, iterate with previews, and export only when the preview looks correct.
+```
+
+### Gemini CLI
+
+Gemini CLI stores user MCP config in `~/.gemini/settings.json`. Project-local config can also live in `.gemini/settings.json`.
+
+Add this block:
+
+```json
+{
+  "mcpServers": {
+    "darktable": {
+      "command": "python3",
+      "args": ["-m", "mcp_darktable"],
+      "env": {
+        "MCP_DARKTABLE_WORKDIR": "/absolute/path/to/.mcp-darktable"
+      },
+      "timeout": 30000,
+      "trust": true
+    }
+  }
+}
+```
+
+Or add it from the CLI. This example writes to user config instead of project-local config:
+
+```bash
+gemini mcp add --scope user --transport stdio --env MCP_DARKTABLE_WORKDIR=/absolute/path/to/.mcp-darktable --timeout 30000 --trust darktable python3 -m mcp_darktable
+```
+
+If you omit `--scope user`, Gemini CLI writes the MCP entry to project-local config by default.
+
+Verify the configuration:
+
+```bash
+gemini mcp list
+```
+
+If Gemini shows the stdio server as disconnected, trust the current folder first:
+
+```bash
+gemini trust
+```
+
 ## Available Tools
 
 - `create_edit_session`
