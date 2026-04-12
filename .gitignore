@@ -1,0 +1,7 @@
+.codex
+.mcp-darktable/
+.pip-deps/
+.pytest_cache/
+.venv/
+__pycache__/
+*.egg-info/

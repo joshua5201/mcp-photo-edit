@@ -1,0 +1,30 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "mcp-darktable"
+version = "0.1.0"
+description = "MCP server for session-based photo editing with darktable-cli"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.12"
+dependencies = [
+  "mcp[cli]>=1.0,<2",
+  "pydantic>=2.7,<3",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0,<9",
+]
+
+[project.scripts]
+mcp-darktable = "mcp_darktable.__main__:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mcp_darktable"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
