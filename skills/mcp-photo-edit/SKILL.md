@@ -22,7 +22,7 @@ Use this skill when an agent should edit photos through the `photo-edit` MCP ser
 ## Recommended Workflow
 
 1. Call `create_edit_session` with the image path.
-2. Inspect the returned preview path and current adjustment state.
+2. See the returned preview image to confirm the current state, finalise editing strategy and the parameters.
 3. Use `list_supported_adjustments` if ranges or semantics are unclear.
 4. Apply small patches with `apply_adjustments`.
 5. Re-check the preview after each patch.
