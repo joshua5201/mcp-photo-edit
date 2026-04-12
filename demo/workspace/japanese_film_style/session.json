@@ -1,0 +1,120 @@
+{
+  "session_id": "370e1da6b4bb",
+  "session_label": null,
+  "source": {
+    "input_path": "[REDACTED]",
+    "file_name": "[REDACTED]",
+    "suffix": ".nef",
+    "width": 4032,
+    "height": 6056
+  },
+  "workspace_dir": "[REDACTED]",
+  "state_path": "[REDACTED]",
+  "xmp_path": null,
+  "preview_path": "[REDACTED]",
+  "preview_max_size": 1024,
+  "preview_history": [
+    {
+      "sequence": 1,
+      "path": "[REDACTED]",
+      "rendered_at": "2026-04-12T09:53:32.224633Z"
+    },
+    {
+      "sequence": 2,
+      "path": "[REDACTED]",
+      "rendered_at": "2026-04-12T09:53:41.004459Z"
+    }
+  ],
+  "adjustments": {
+    "exposure": 1.2,
+    "contrast": -15.0,
+    "saturation": -10.0,
+    "rgb_mixer": null,
+    "denoise_luma": 0.0,
+    "denoise_detail": 0.0,
+    "denoise_chroma": 0.0,
+    "color_temperature": null,
+    "green_balance": null,
+    "highlights": 20.0,
+    "shadows": 30.0,
+    "sharpen_amount": 0,
+    "sharpen_radius": 0.5,
+    "sharpen_contrast": 20.0,
+    "orientation": 0,
+    "crop": {
+      "left": 0.15,
+      "top": 0.15,
+      "right": 0.85,
+      "bottom": 0.85
+    }
+  },
+  "history": [
+    {
+      "step_id": "0001",
+      "kind": "init",
+      "created_at": "2026-04-12T09:53:30.738542Z",
+      "adjustments": {
+        "exposure": 0.0,
+        "contrast": 0.0,
+        "saturation": 0.0,
+        "rgb_mixer": null,
+        "denoise_luma": 0.0,
+        "denoise_detail": 0.0,
+        "denoise_chroma": 0.0,
+        "color_temperature": null,
+        "green_balance": null,
+        "highlights": 0.0,
+        "shadows": 0.0,
+        "sharpen_amount": 0,
+        "sharpen_radius": 0.5,
+        "sharpen_contrast": 20.0,
+        "orientation": 0,
+        "crop": null
+      },
+      "state_path": "[REDACTED]",
+      "preview_path": "[REDACTED]",
+      "preview_sequence": 1,
+      "description": null
+    },
+    {
+      "step_id": "0002",
+      "kind": "apply_adjustments",
+      "created_at": "2026-04-12T09:53:39.551568Z",
+      "adjustments": {
+        "exposure": 1.2,
+        "contrast": -15.0,
+        "saturation": -10.0,
+        "rgb_mixer": null,
+        "denoise_luma": 0.0,
+        "denoise_detail": 0.0,
+        "denoise_chroma": 0.0,
+        "color_temperature": null,
+        "green_balance": null,
+        "highlights": 20.0,
+        "shadows": 30.0,
+        "sharpen_amount": 0,
+        "sharpen_radius": 0.5,
+        "sharpen_contrast": 20.0,
+        "orientation": 0,
+        "crop": {
+          "left": 0.15,
+          "top": 0.15,
+          "right": 0.85,
+          "bottom": 0.85
+        }
+      },
+      "state_path": "[REDACTED]",
+      "preview_path": "[REDACTED]",
+      "preview_sequence": 2,
+      "description": null
+    }
+  ],
+  "history_index": 1,
+  "created_at": "2026-04-12T09:53:30.753366Z",
+  "updated_at": "2026-04-12T09:53:44.354313Z",
+  "last_rendered_at": "2026-04-12T09:53:44.354322Z",
+  "backend": "rawtherapee-cli",
+  "can_undo": true,
+  "can_redo": false,
+  "history_length": 2
+}

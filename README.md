@@ -6,6 +6,36 @@ The server exposes a session-based editing workflow instead of raw sidecar manip
 
 Each session now also maintains an explicit undo / redo timeline in `session.json`. Semantic edit history is tracked separately from preview-render history.
 
+## Examples 
+
+Check the [demo/](demo/) directory for full session details, including `session.json`, `PP3` sidecars, and intermediate previews in the `workspace/` folder.
+
+### Example: Hong Kong Vibrant Vibe (v0.1.0)
+
+This example demonstrates an agent-driven edit to achieve a "Hong Kong vibrant" look using Gemini 3 Flash.
+
+**Prompt:**
+> Adjust `demo/hk.jpg` to be more colorful, more Hong Kong vibrant, lively vibe. Crop / rotate the photo if you want. Export to `demo/hk_modified.jpg`
+
+| 1. Before | 2. After |
+| :--- | :--- |
+| ![Before](demo/hk.jpg) | ![After](demo/hk_modified.jpg) |
+
+**Model:** Gemini 3 Flash
+
+### Example: Japanese Film Style (v0.1.0)
+
+**Prompt:**
+> Apply a bright, airy Japanese film like profile to demo/japanese_film_style.NEF. Finally, apply a crop to focus on the center and export the result as japanese_film_style_modified.jpg
+
+| 1. Before | 2. After |
+| :--- | :--- |
+| ![Before](demo/japanese_film_style.jpg) | ![After](demo/japanese_film_style_modified.jpg) |
+
+Note: The original NEF file is not included in the repository. The "Before" image is a JPEG exported from Darktable without modifications. This photograph is original work and is not subject to the GPL license; commercial use is prohibited.
+
+**Model:** Gemini 3 Flash
+
 ## Status
 
 This is an MVP implementation.
@@ -70,22 +100,7 @@ uv run mcp-photo-edit
 
 ## MCP Client Configuration
 
-Example stdio configuration:
-
-```json
-{
-  "mcpServers": {
-    "photo-edit": {
-      "command": "uv",
-      "args": ["run", "mcp-photo-edit"],
-      "env": {
-        "MCP_PHOTO_EDIT_WORKDIR": "/absolute/path/to/.mcp-photo-edit",
-        "MCP_PHOTO_EDIT_BACKEND": "rawtherapee-cli"
-      }
-    }
-  }
-}
-```
+Example stdio configurations
 
 ### Codex CLI
 
