@@ -3,8 +3,8 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
-from mcp_darktable.models import AdjustmentState, CropAdjustment, SourceImageInfo
-from mcp_darktable.render import DarktableBackend, RawTherapeeBackend
+from mcp_photo_edit.models import AdjustmentState, CropAdjustment, SourceImageInfo
+from mcp_photo_edit.render import DarktableBackend, RawTherapeeBackend
 
 
 def test_darktable_render_invokes_cli_and_moves_output(monkeypatch, tmp_path: Path) -> None:
@@ -20,8 +20,8 @@ def test_darktable_render_invokes_cli_and_moves_output(monkeypatch, tmp_path: Pa
         (output_dir / "rendered.jpg").write_bytes(b"jpg")
         return subprocess.CompletedProcess(command, 0, stdout="", stderr="")
 
-    monkeypatch.setattr("mcp_darktable.render.shutil.which", fake_which)
-    monkeypatch.setattr("mcp_darktable.render.subprocess.run", fake_run)
+    monkeypatch.setattr("mcp_photo_edit.render.shutil.which", fake_which)
+    monkeypatch.setattr("mcp_photo_edit.render.subprocess.run", fake_run)
 
     source = tmp_path / "source.ppm"
     sidecar = tmp_path / "session.xmp"
@@ -53,8 +53,8 @@ def test_rawtherapee_render_invokes_cli_with_pp3(monkeypatch, tmp_path: Path) ->
         output_path.write_bytes(b"jpg")
         return subprocess.CompletedProcess(command, 0, stdout="", stderr="")
 
-    monkeypatch.setattr("mcp_darktable.render.shutil.which", fake_which)
-    monkeypatch.setattr("mcp_darktable.render.subprocess.run", fake_run)
+    monkeypatch.setattr("mcp_photo_edit.render.shutil.which", fake_which)
+    monkeypatch.setattr("mcp_photo_edit.render.subprocess.run", fake_run)
 
     source = tmp_path / "source.nef"
     profile = tmp_path / "session.pp3"

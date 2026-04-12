@@ -2,10 +2,10 @@
 
 Use this MCP as an iterative editor, not as a one-shot prompt sink.
 
-Project naming note:
+Project name:
 
-- Public name: `mcp-photo-edit`
-- Current Python module and CLI entrypoint remain `mcp_darktable`
+- `mcp-photo-edit`
+- Python module: `mcp_photo_edit`
 
 ## Recommended Flow
 

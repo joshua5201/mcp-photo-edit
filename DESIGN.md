@@ -2,7 +2,7 @@
 
 ## Summary
 
-`mcp-photo-edit` is the proposed public name for this MCP server for agent-driven photo editing. The current codebase still uses `mcp-darktable` / `mcp_darktable` identifiers during the migration. The public contract is a stable, structured edit schema and a session-based workflow. The server currently uses RawTherapee as the default backend and keeps backend-specific state internal. A darktable backend remains available during the transition.
+`mcp-photo-edit` is this MCP server for agent-driven photo editing. The public contract is a stable, structured edit schema and a session-based workflow. The server currently uses RawTherapee as the default backend and keeps backend-specific state internal. A darktable backend remains available during the transition.
 
 The design is intentionally opinionated around agent ergonomics:
 
@@ -167,7 +167,7 @@ Rules:
 
 Default work directory:
 
-- `./.mcp-darktable`
+- `./.mcp-photo-edit`
 
 This keeps the MVP easy to inspect locally and easy to ignore in git.
 

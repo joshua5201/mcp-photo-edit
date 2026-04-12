@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from mcp_darktable.models import AdjustmentPatch, AdjustmentState, CropAdjustment
+from mcp_photo_edit.models import AdjustmentPatch, AdjustmentState, CropAdjustment
 
 
 def test_crop_requires_positive_area() -> None:

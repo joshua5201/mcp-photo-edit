@@ -25,7 +25,7 @@ def create_server() -> FastMCP:
 
     session_manager = SessionManager()
     mcp = FastMCP(
-        "mcp-darktable",
+        "mcp-photo-edit",
         instructions=(
             "Create edit sessions, apply structured photo adjustments, "
             "inspect previews, and export final images."

@@ -4,7 +4,7 @@ Current baseline: `7cdfac3`
 
 ## Objective
 
-Add RawTherapee as a supported rendering backend for `mcp-darktable`, using a deterministic session-owned `PP3` file plus an ephemeral preview overlay profile.
+Add RawTherapee as a supported rendering backend for `mcp-photo-edit`, using a deterministic session-owned `PP3` file plus an ephemeral preview overlay profile.
 
 This plan keeps the public MCP contract stable:
 
@@ -133,7 +133,7 @@ The exact field selection should be validated with hand-generated or GUI-generat
 
 ## Phase 1. Backend foundation
 
-- [ ] Add a backend interface in `src/mcp_darktable`
+- [ ] Add a backend interface in `src/mcp_photo_edit`
 - [ ] Move render/export responsibilities behind the backend interface
 - [ ] Add backend selection through config or environment variable
 - [ ] Default to the current darktable backend until RawTherapee passes feature parity for the MVP set

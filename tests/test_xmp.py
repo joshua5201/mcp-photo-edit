@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from mcp_darktable.models import AdjustmentState, CropAdjustment
-from mcp_darktable.xmp import build_sidecar
+from mcp_photo_edit.models import AdjustmentState, CropAdjustment
+from mcp_photo_edit.xmp import build_sidecar
 
 
 def test_build_sidecar_contains_native_darktable_history() -> None:

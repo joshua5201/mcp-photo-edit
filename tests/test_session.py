@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from mcp_darktable.models import AdjustmentPatch, SourceImageInfo
-from mcp_darktable.session import SessionManager
+from mcp_photo_edit.models import AdjustmentPatch, SourceImageInfo
+from mcp_photo_edit.session import SessionManager
 
 
 class DummyBackend:

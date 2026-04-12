@@ -4,11 +4,6 @@ An MCP server for agent-driven photo editing with pluggable RAW backends.
 
 The server exposes a session-based editing workflow instead of raw sidecar manipulation. Agents create an edit session, apply structured adjustments, render previews, and export a final image. The current default backend writes session-owned RawTherapee `PP3` files and renders them through `rawtherapee-cli`. A darktable backend remains available as an optional fallback.
 
-Proposed project rename:
-
-- Public name: `mcp-photo-edit`
-- Current repo, package, and CLI identifiers remain `mcp-darktable` / `mcp_darktable` during the migration
-
 ## Status
 
 This is an MVP implementation.
@@ -60,7 +55,7 @@ On this machine, the bundled sample Nikon Z50_2 `.NEF` files under `.codex/raw/`
 Start the server over stdio:
 
 ```bash
-python3 -m mcp_darktable
+python3 -m mcp_photo_edit
 ```
 
 ## MCP Client Configuration
@@ -70,12 +65,12 @@ Example stdio configuration:
 ```json
 {
   "mcpServers": {
-    "darktable": {
+    "photo-edit": {
       "command": "python3",
-      "args": ["-m", "mcp_darktable"],
+      "args": ["-m", "mcp_photo_edit"],
       "env": {
-        "MCP_DARKTABLE_WORKDIR": "/absolute/path/to/.mcp-darktable",
-        "MCP_DARKTABLE_BACKEND": "rawtherapee-cli"
+        "MCP_PHOTO_EDIT_WORKDIR": "/absolute/path/to/.mcp-photo-edit",
+        "MCP_PHOTO_EDIT_BACKEND": "rawtherapee-cli"
       }
     }
   }
@@ -89,19 +84,19 @@ Codex reads MCP configuration from `~/.codex/config.toml`.
 Add this block:
 
 ```toml
-[mcp_servers.darktable]
+[mcp_servers.photo_edit]
 command = "python3"
-args = ["-m", "mcp_darktable"]
+args = ["-m", "mcp_photo_edit"]
 
-[mcp_servers.darktable.env]
-MCP_DARKTABLE_WORKDIR = "/absolute/path/to/.mcp-darktable"
-MCP_DARKTABLE_BACKEND = "rawtherapee-cli"
+[mcp_servers.photo_edit.env]
+MCP_PHOTO_EDIT_WORKDIR = "/absolute/path/to/.mcp-photo-edit"
+MCP_PHOTO_EDIT_BACKEND = "rawtherapee-cli"
 ```
 
 If you prefer to add it from the CLI instead of editing TOML manually:
 
 ```bash
-codex mcp add darktable --env MCP_DARKTABLE_WORKDIR=/absolute/path/to/.mcp-darktable --env MCP_DARKTABLE_BACKEND=rawtherapee-cli -- python3 -m mcp_darktable
+codex mcp add photo-edit --env MCP_PHOTO_EDIT_WORKDIR=/absolute/path/to/.mcp-photo-edit --env MCP_PHOTO_EDIT_BACKEND=rawtherapee-cli -- python3 -m mcp_photo_edit
 ```
 
 Verify the server is registered:
@@ -113,7 +108,7 @@ codex mcp list
 Recommended `AGENTS.md` snippet for better tool selection:
 
 ```md
-Use the `darktable` MCP server for photo-editing tasks. Create an edit session first, iterate with previews, and export only when the preview looks correct.
+Use the `photo-edit` MCP server for photo-editing tasks. Create an edit session first, iterate with previews, and export only when the preview looks correct.
 ```
 
 ### Gemini CLI
@@ -125,12 +120,12 @@ Add this block:
 ```json
 {
   "mcpServers": {
-    "darktable": {
+    "photo-edit": {
       "command": "python3",
-      "args": ["-m", "mcp_darktable"],
+      "args": ["-m", "mcp_photo_edit"],
       "env": {
-        "MCP_DARKTABLE_WORKDIR": "/absolute/path/to/.mcp-darktable",
-        "MCP_DARKTABLE_BACKEND": "rawtherapee-cli"
+        "MCP_PHOTO_EDIT_WORKDIR": "/absolute/path/to/.mcp-photo-edit",
+        "MCP_PHOTO_EDIT_BACKEND": "rawtherapee-cli"
       },
       "timeout": 30000,
       "trust": true
@@ -142,7 +137,7 @@ Add this block:
 Or add it from the CLI. This example writes to user config instead of project-local config:
 
 ```bash
-gemini mcp add --scope user --transport stdio --env MCP_DARKTABLE_WORKDIR=/absolute/path/to/.mcp-darktable --env MCP_DARKTABLE_BACKEND=rawtherapee-cli --timeout 30000 --trust darktable python3 -m mcp_darktable
+gemini mcp add --scope user --transport stdio --env MCP_PHOTO_EDIT_WORKDIR=/absolute/path/to/.mcp-photo-edit --env MCP_PHOTO_EDIT_BACKEND=rawtherapee-cli --timeout 30000 --trust photo-edit python3 -m mcp_photo_edit
 ```
 
 If you omit `--scope user`, Gemini CLI writes the MCP entry to project-local config by default.
@@ -200,7 +195,7 @@ Backend note:
 ## Project Layout
 
 ```text
-src/mcp_darktable/
+src/mcp_photo_edit/
   models.py        Pydantic schemas and validation
   session.py       Session lifecycle and persistence
   pp3.py           Adjustment to RawTherapee PP3 translation

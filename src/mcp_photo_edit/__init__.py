@@ -1,4 +1,4 @@
-"""mcp-darktable package."""
+"""mcp-photo-edit package."""
 
 from .server import create_server
 

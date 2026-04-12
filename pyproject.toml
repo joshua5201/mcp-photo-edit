@@ -3,7 +3,7 @@ requires = ["hatchling>=1.25"]
 build-backend = "hatchling.build"
 
 [project]
-name = "mcp-darktable"
+name = "mcp-photo-edit"
 version = "0.1.0"
 description = "MCP server for session-based photo editing with pluggable RAW backends"
 readme = "README.md"
@@ -21,10 +21,10 @@ dev = [
 ]
 
 [project.scripts]
-mcp-darktable = "mcp_darktable.__main__:main"
+mcp-photo-edit = "mcp_photo_edit.__main__:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/mcp_darktable"]
+packages = ["src/mcp_photo_edit"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]

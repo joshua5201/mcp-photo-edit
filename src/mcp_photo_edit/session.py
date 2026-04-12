@@ -29,14 +29,19 @@ class SessionManager:
         workspace_root: Path | None = None,
         backend: RenderBackend | None = None,
     ) -> None:
-        default_root = Path(os.environ.get("MCP_DARKTABLE_WORKDIR", ".mcp-darktable"))
+        configured_workdir = os.environ.get("MCP_PHOTO_EDIT_WORKDIR") or os.environ.get(
+            "MCP_DARKTABLE_WORKDIR"
+        )
+        default_root = Path(configured_workdir or ".mcp-photo-edit")
         self.workspace_root = (workspace_root or default_root).resolve()
         if backend is not None:
             self.backends = {backend.backend_id: backend}
             self.default_backend_id = backend.backend_id
         else:
             self.backends = build_backend_registry()
-            configured_backend = os.environ.get("MCP_DARKTABLE_BACKEND", "rawtherapee-cli")
+            configured_backend = os.environ.get("MCP_PHOTO_EDIT_BACKEND") or os.environ.get(
+                "MCP_DARKTABLE_BACKEND", "rawtherapee-cli"
+            )
             self.default_backend_id = normalize_backend_name(configured_backend)
             if self.default_backend_id not in self.backends:
                 supported = ", ".join(sorted(self.backends))

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from mcp_darktable.models import AdjustmentState
-from mcp_darktable.pp3 import build_pp3
+from mcp_photo_edit.models import AdjustmentState
+from mcp_photo_edit.pp3 import build_pp3
 
 
 def test_build_pp3_contains_supported_exposure_fields() -> None:
