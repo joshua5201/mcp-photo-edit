@@ -77,6 +77,10 @@ def create_server() -> FastMCP:
                 preview_path=session.preview_path,
                 preview_count=len(session.preview_history),
                 preview_history=session.preview_history,
+                history_index=session.history_index,
+                history_length=session.history_length,
+                can_undo=session.can_undo,
+                can_redo=session.can_redo,
                 last_rendered_at=session.last_rendered_at,
             )
         except DarktableMcpError as exc:
@@ -133,6 +137,38 @@ def create_server() -> FastMCP:
             )
         except DarktableMcpError as exc:
             return ExportResult(ok=False, error=_error_info(exc))
+
+    @mcp.tool()
+    def undo_adjustment(
+        session_id: str,
+        render_preview: bool = False,
+    ) -> SessionEnvelope:
+        """Move the current session to the previous committed adjustment state."""
+
+        try:
+            session = session_manager.undo_adjustment(
+                session_id,
+                render_preview=render_preview,
+            )
+            return SessionEnvelope(session=session)
+        except DarktableMcpError as exc:
+            return _session_error(exc)
+
+    @mcp.tool()
+    def redo_adjustment(
+        session_id: str,
+        render_preview: bool = False,
+    ) -> SessionEnvelope:
+        """Move the current session to the next committed adjustment state."""
+
+        try:
+            session = session_manager.redo_adjustment(
+                session_id,
+                render_preview=render_preview,
+            )
+            return SessionEnvelope(session=session)
+        except DarktableMcpError as exc:
+            return _session_error(exc)
 
     @mcp.tool()
     def list_supported_adjustments() -> SupportedAdjustmentsResult:

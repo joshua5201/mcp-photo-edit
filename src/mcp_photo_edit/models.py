@@ -8,7 +8,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, computed_field, field_validator, model_validator
 
 
 ADJUSTMENT_SPECS: dict[str, dict[str, Any]] = {
@@ -199,6 +199,19 @@ class PreviewArtifact(BaseModel):
     rendered_at: datetime = Field(default_factory=utc_now)
 
 
+class HistoryStep(BaseModel):
+    """A committed semantic edit state."""
+
+    step_id: str
+    kind: str
+    created_at: datetime = Field(default_factory=utc_now)
+    adjustments: AdjustmentState
+    state_path: str | None = None
+    preview_path: str | None = None
+    preview_sequence: int | None = None
+    description: str | None = None
+
+
 def _exiftool_dimensions(input_path: Path) -> tuple[int | None, int | None]:
     executable = shutil.which("exiftool")
     if executable is None:
@@ -242,6 +255,8 @@ class SessionState(BaseModel):
     preview_max_size: int = Field(default=1024, ge=64, le=4096)
     preview_history: list[PreviewArtifact] = Field(default_factory=list)
     adjustments: AdjustmentState = Field(default_factory=AdjustmentState)
+    history: list[HistoryStep] = Field(default_factory=list)
+    history_index: int = 0
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
     last_rendered_at: datetime | None = None
@@ -257,17 +272,48 @@ class SessionState(BaseModel):
         return str(value)
 
     @model_validator(mode="after")
-    def ensure_compatibility(self) -> "SessionState":
-        """Load older manifests that only persisted xmp_path or a single preview path."""
+    def validate_history(self) -> "SessionState":
+        """Normalize state and ensure the history cursor is valid."""
 
         if self.state_path is None and self.xmp_path is not None:
             self.state_path = self.xmp_path
+        if not self.history:
+            raise ValueError("history must contain at least one step")
+        if self.history_index < 0 or self.history_index >= len(self.history):
+            raise ValueError("history_index must point to a valid step")
         return self
 
     def touch(self) -> None:
         """Refresh the update timestamp."""
 
         self.updated_at = utc_now()
+
+    @property
+    def current_step(self) -> HistoryStep:
+        """Return the history step referenced by the current cursor."""
+
+        return self.history[self.history_index]
+
+    @computed_field
+    @property
+    def can_undo(self) -> bool:
+        """Whether the cursor can move backward."""
+
+        return self.history_index > 0
+
+    @computed_field
+    @property
+    def can_redo(self) -> bool:
+        """Whether the cursor can move forward."""
+
+        return self.history_index < len(self.history) - 1
+
+    @computed_field
+    @property
+    def history_length(self) -> int:
+        """Return the number of semantic history steps."""
+
+        return len(self.history)
 
 
 class SessionEnvelope(BaseModel):
@@ -287,6 +333,10 @@ class PreviewResult(BaseModel):
     preview_path: str | None = None
     preview_count: int | None = None
     preview_history: list[PreviewArtifact] = Field(default_factory=list)
+    history_index: int | None = None
+    history_length: int | None = None
+    can_undo: bool | None = None
+    can_redo: bool | None = None
     last_rendered_at: datetime | None = None
     error: ErrorInfo | None = None
 

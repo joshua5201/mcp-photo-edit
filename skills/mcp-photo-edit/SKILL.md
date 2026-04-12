@@ -22,18 +22,26 @@ Use this skill when an agent should edit photos through the `photo-edit` MCP ser
 ## Recommended Workflow
 
 1. Call `create_edit_session` with the image path.
-2. Inspect the returned preview image, `preview_count`, and current state to confirm the starting point.
+2. Inspect the returned preview image, `preview_count`, current state, and history cursor fields such as `history_index`, `history_length`, `can_undo`, and `can_redo`.
 3. Use `list_supported_adjustments` if ranges or semantics are unclear.
 4. Apply small patches with `apply_adjustments`.
-5. Re-check the preview after each patch.
-6. Use `render_preview` whenever you want a fresh preview artifact for the current session state.
-7. Call `export_image` only when the preview looks correct.
+5. Use `undo_adjustment` or `redo_adjustment` to move across committed edit steps when needed.
+6. Re-check the preview after each patch.
+7. Use `render_preview` whenever you want a fresh preview artifact for the current session state.
+8. Call `export_image` only when the preview looks correct.
 
 ## Preview History
 
 - Every preview render is preserved as a numbered artifact.
 - `preview_path` always points at the latest preview.
 - `preview_count` tells you how many preview artifacts exist for the session.
+
+## Undo / Redo
+
+- Semantic edit history is tracked separately from preview history.
+- `history_index` points to the current committed edit step.
+- `can_undo` and `can_redo` indicate whether cursor movement is available.
+- Applying a new edit after undo truncates the redo branch.
 
 ## Adjustment Notes
 

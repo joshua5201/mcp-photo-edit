@@ -3,6 +3,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
+from mcp_photo_edit.errors import ValidationError
 from mcp_photo_edit.models import AdjustmentPatch, SourceImageInfo
 from mcp_photo_edit.session import SessionManager
 
@@ -10,7 +13,7 @@ from mcp_photo_edit.session import SessionManager
 class DummyBackend:
     backend_id = "dummy-backend"
     state_file_name = "session.state"
-    supported_adjustment_names = ("exposure", "contrast", "saturation")
+    supported_adjustment_names = ("exposure", "contrast", "saturation", "orientation", "crop")
 
     def __init__(self) -> None:
         self.preview_calls: list[tuple[Path, Path, Path, int | None]] = []
@@ -18,7 +21,11 @@ class DummyBackend:
         self.preview_size = (800, 600)
 
     def write_state_file(self, source: SourceImageInfo, adjustments, state_path: Path) -> None:
-        state_path.write_text(f"{source.file_name}:{adjustments.exposure}", encoding="utf-8")
+        state_path.parent.mkdir(parents=True, exist_ok=True)
+        state_path.write_text(
+            f"{source.file_name}:{json.dumps(adjustments.model_dump(), sort_keys=True)}",
+            encoding="utf-8",
+        )
 
     def render_preview(
         self,
@@ -40,7 +47,7 @@ class DummyBackend:
         return (800, 600)
 
 
-def test_create_session_persists_manifest_state_and_preview(tmp_path: Path) -> None:
+def test_create_session_persists_initial_history_state_and_preview(tmp_path: Path) -> None:
     source = tmp_path / "source.ppm"
     source.write_text("P3\n1 1\n255\n255 0 0\n", encoding="utf-8")
     backend = DummyBackend()
@@ -49,21 +56,32 @@ def test_create_session_persists_manifest_state_and_preview(tmp_path: Path) -> N
     session = manager.create_session(str(source), preview_max_size=512, session_label="demo")
 
     session_dir = Path(session.workspace_dir)
+    current_state = Path(session.state_path)
+    history_state = session_dir / "history" / "step-0001.pp3"
+
     assert session_dir.exists()
     assert Path(session.preview_path).exists()
-    assert Path(session.state_path).read_text(encoding="utf-8")
+    assert current_state.read_text(encoding="utf-8")
+    assert history_state.read_text(encoding="utf-8") == current_state.read_text(encoding="utf-8")
     assert (session_dir / "session.json").exists()
     assert session.backend == "dummy-backend"
     assert session.source.width == 800
     assert session.source.height == 600
-    assert backend.preview_calls[0][1] == Path(session.state_path)
+    assert backend.preview_calls[0][1] == current_state
     assert backend.preview_calls[0][3] == 512
     assert len(session.preview_history) == 1
-    assert session.preview_history[0].sequence == 1
-    assert session.preview_history[0].path == session.preview_path
+    assert len(session.history) == 1
+    assert session.history_index == 0
+    assert session.history_length == 1
+    assert session.can_undo is False
+    assert session.can_redo is False
+    assert session.history[0].kind == "init"
+    assert session.history[0].preview_path == session.preview_path
+    assert session.history[0].preview_sequence == 1
+    assert Path(session.history[0].state_path).name == "step-0001.pp3"
 
 
-def test_apply_and_reset_adjustments_updates_persisted_state(tmp_path: Path) -> None:
+def test_apply_and_reset_adjustments_append_semantic_history(tmp_path: Path) -> None:
     source = tmp_path / "source.ppm"
     source.write_text("P3\n1 1\n255\n255 0 0\n", encoding="utf-8")
     backend = DummyBackend()
@@ -81,7 +99,12 @@ def test_apply_and_reset_adjustments_updates_persisted_state(tmp_path: Path) -> 
     assert reloaded.adjustments.saturation == 12.0
     assert backend.preview_calls[-1][1] == Path(updated.state_path)
     assert len(updated.preview_history) == 2
-    assert updated.preview_history[-1].sequence == 2
+    assert len(updated.history) == 2
+    assert updated.history_index == 1
+    assert updated.can_undo is True
+    assert updated.can_redo is False
+    assert updated.history[-1].kind == "apply_adjustments"
+    assert updated.history[-1].preview_sequence == 2
 
     reset = manager.reset_adjustments(
         session.session_id,
@@ -90,6 +113,11 @@ def test_apply_and_reset_adjustments_updates_persisted_state(tmp_path: Path) -> 
     )
     assert reset.adjustments.exposure == 0.0
     assert reset.adjustments.saturation == 12.0
+    assert len(reset.history) == 3
+    assert reset.history_index == 2
+    assert reset.history[-1].kind == "reset_adjustments"
+    assert reset.history[-1].preview_path is None
+    assert reset.preview_path == updated.preview_path
 
 
 def test_crop_preview_does_not_overwrite_canonical_source_dimensions(tmp_path: Path) -> None:
@@ -113,7 +141,7 @@ def test_crop_preview_does_not_overwrite_canonical_source_dimensions(tmp_path: P
     assert updated.source.height == 600
 
 
-def test_render_preview_appends_history_and_keeps_previous_files(tmp_path: Path) -> None:
+def test_render_preview_appends_preview_history_without_semantic_history(tmp_path: Path) -> None:
     source = tmp_path / "source.ppm"
     source.write_text("P3\n1 1\n255\n255 0 0\n", encoding="utf-8")
     backend = DummyBackend()
@@ -122,6 +150,7 @@ def test_render_preview_appends_history_and_keeps_previous_files(tmp_path: Path)
     session = manager.create_session(str(source))
     first_preview = Path(session.preview_path)
     assert first_preview.name == "preview-0001.jpg"
+    assert len(session.history) == 1
 
     session = manager.render_preview(session.session_id)
     second_preview = Path(session.preview_path)
@@ -130,27 +159,97 @@ def test_render_preview_appends_history_and_keeps_previous_files(tmp_path: Path)
     assert second_preview.exists()
     assert first_preview.exists()
     assert len(session.preview_history) == 2
+    assert len(session.history) == 1
+    assert session.history_index == 0
     assert [artifact.sequence for artifact in session.preview_history] == [1, 2]
-    assert [Path(artifact.path).name for artifact in session.preview_history] == [
-        "preview-0001.jpg",
-        "preview-0002.jpg",
-    ]
+    assert session.history[0].preview_sequence == 2
+    assert session.history[0].preview_path == str(second_preview)
 
 
-def test_manifest_backfills_preview_history_on_load(tmp_path: Path) -> None:
+def test_undo_and_redo_move_cursor_without_creating_new_steps(tmp_path: Path) -> None:
     source = tmp_path / "source.ppm"
     source.write_text("P3\n1 1\n255\n255 0 0\n", encoding="utf-8")
     backend = DummyBackend()
     manager = SessionManager(workspace_root=tmp_path / "workspace", backend=backend)
 
     session = manager.create_session(str(source))
-    manifest_path = Path(session.workspace_dir) / "session.json"
+    session = manager.apply_adjustments(session.session_id, AdjustmentPatch(exposure=1.0), render_preview=True)
+    session = manager.apply_adjustments(session.session_id, AdjustmentPatch(contrast=20.0), render_preview=True)
 
-    data = json.loads(session.model_dump_json())
-    data.pop("preview_history", None)
-    manifest_path.write_text(json.dumps(data), encoding="utf-8")
+    preview_count = len(session.preview_history)
+    undone = manager.undo_adjustment(session.session_id)
+    assert undone.history_index == 1
+    assert undone.adjustments.exposure == 1.0
+    assert undone.adjustments.contrast == 0.0
+    assert len(undone.history) == 3
+    assert len(undone.preview_history) == preview_count
+    assert undone.preview_path == undone.history[1].preview_path
+    assert undone.can_undo is True
+    assert undone.can_redo is True
 
-    reloaded = manager.get_session(session.session_id)
-    assert len(reloaded.preview_history) == 1
-    assert reloaded.preview_history[0].sequence == 1
-    assert reloaded.preview_history[0].path == reloaded.preview_path
+    redone = manager.redo_adjustment(session.session_id)
+    assert redone.history_index == 2
+    assert redone.adjustments.exposure == 1.0
+    assert redone.adjustments.contrast == 20.0
+    assert len(redone.history) == 3
+    assert len(redone.preview_history) == preview_count
+    assert redone.preview_path == redone.history[2].preview_path
+
+
+def test_apply_after_undo_truncates_redo_tail(tmp_path: Path) -> None:
+    source = tmp_path / "source.ppm"
+    source.write_text("P3\n1 1\n255\n255 0 0\n", encoding="utf-8")
+    backend = DummyBackend()
+    manager = SessionManager(workspace_root=tmp_path / "workspace", backend=backend)
+
+    session = manager.create_session(str(source))
+    session = manager.apply_adjustments(session.session_id, AdjustmentPatch(exposure=1.0), render_preview=True)
+    session = manager.apply_adjustments(session.session_id, AdjustmentPatch(contrast=20.0), render_preview=True)
+
+    undone = manager.undo_adjustment(session.session_id)
+    branched = manager.apply_adjustments(
+        undone.session_id,
+        AdjustmentPatch(saturation=15.0),
+        render_preview=False,
+    )
+
+    assert len(branched.history) == 3
+    assert branched.history_index == 2
+    assert branched.adjustments.exposure == 1.0
+    assert branched.adjustments.contrast == 0.0
+    assert branched.adjustments.saturation == 15.0
+    assert branched.can_redo is False
+
+
+def test_export_uses_cursor_selected_state(tmp_path: Path) -> None:
+    source = tmp_path / "source.ppm"
+    source.write_text("P3\n1 1\n255\n255 0 0\n", encoding="utf-8")
+    backend = DummyBackend()
+    manager = SessionManager(workspace_root=tmp_path / "workspace", backend=backend)
+
+    session = manager.create_session(str(source))
+    session = manager.apply_adjustments(session.session_id, AdjustmentPatch(exposure=1.0), render_preview=False)
+    session = manager.apply_adjustments(session.session_id, AdjustmentPatch(contrast=20.0), render_preview=False)
+    session = manager.undo_adjustment(session.session_id)
+
+    output = tmp_path / "output.jpg"
+    manager.export_image(session.session_id, str(output))
+
+    assert output.exists()
+    assert backend.export_calls[-1][1] == Path(session.state_path)
+    assert '"contrast": 0.0' in Path(session.state_path).read_text(encoding="utf-8")
+
+
+def test_undo_and_redo_validate_bounds(tmp_path: Path) -> None:
+    source = tmp_path / "source.ppm"
+    source.write_text("P3\n1 1\n255\n255 0 0\n", encoding="utf-8")
+    backend = DummyBackend()
+    manager = SessionManager(workspace_root=tmp_path / "workspace", backend=backend)
+
+    session = manager.create_session(str(source))
+    with pytest.raises(ValidationError):
+        manager.undo_adjustment(session.session_id)
+
+    session = manager.apply_adjustments(session.session_id, AdjustmentPatch(exposure=1.0), render_preview=False)
+    with pytest.raises(ValidationError):
+        manager.redo_adjustment(session.session_id)

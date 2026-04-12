@@ -14,6 +14,8 @@ from .models import (
     RESETTABLE_FIELDS,
     AdjustmentPatch,
     AdjustmentSpec,
+    AdjustmentState,
+    HistoryStep,
     PreviewArtifact,
     SessionState,
     SourceImageInfo,
@@ -67,7 +69,13 @@ class SessionManager:
         session_dir.mkdir(parents=True, exist_ok=False)
         backend = self.backends[self.default_backend_id]
         state_path = session_dir / backend.state_file_name
-        initial_preview_path = session_dir / self._preview_filename(1)
+        initial_adjustments = AdjustmentState()
+        initial_step = HistoryStep(
+            step_id=self._next_step_id(0),
+            kind="init",
+            adjustments=initial_adjustments,
+            state_path=str(self._history_state_path(session_dir, 1)),
+        )
 
         session = SessionState(
             session_id=session_id,
@@ -76,12 +84,14 @@ class SessionManager:
             workspace_dir=str(session_dir),
             state_path=str(state_path),
             xmp_path=str(state_path) if backend.backend_id == "darktable-cli" else None,
-            preview_path=str(initial_preview_path),
+            preview_path="",
             preview_max_size=preview_max_size,
+            adjustments=initial_adjustments,
+            history=[initial_step],
+            history_index=0,
             backend=backend.backend_id,
         )
-        self._write_state(session)
-        self._render_preview(session)
+        self._commit_step_artifacts(session, initial_step, render_preview=True)
         self._save_session(session)
         return session
 
@@ -92,8 +102,6 @@ class SessionManager:
         if not manifest_path.exists():
             raise SessionNotFoundError(session_id)
         session = SessionState.model_validate_json(manifest_path.read_text(encoding="utf-8"))
-        if not session.preview_history and session.preview_path:
-            session.preview_history = [PreviewArtifact(sequence=1, path=session.preview_path)]
         return session
 
     def apply_adjustments(
@@ -107,15 +115,15 @@ class SessionManager:
 
         session = self.get_session(session_id)
         try:
-            session.adjustments = session.adjustments.apply_patch(patch)
+            adjustments = session.adjustments.apply_patch(patch)
         except PydanticValidationError as exc:
             raise ValidationError(str(exc)) from exc
-        session.touch()
-        self._write_state(session)
-        if render_preview:
-            self._render_preview(session)
-        self._save_session(session)
-        return session
+        return self._append_history_step(
+            session,
+            adjustments=adjustments,
+            kind="apply_adjustments",
+            render_preview=render_preview,
+        )
 
     def reset_adjustments(
         self,
@@ -136,13 +144,13 @@ class SessionManager:
                 )
 
         session = self.get_session(session_id)
-        session.adjustments = session.adjustments.reset_fields(fields)
-        session.touch()
-        self._write_state(session)
-        if render_preview:
-            self._render_preview(session)
-        self._save_session(session)
-        return session
+        adjustments = session.adjustments.reset_fields(fields)
+        return self._append_history_step(
+            session,
+            adjustments=adjustments,
+            kind="reset_adjustments",
+            render_preview=render_preview,
+        )
 
     def export_image(self, session_id: str, output_path: str) -> Path:
         """Render the current session state to a final output path."""
@@ -170,6 +178,44 @@ class SessionManager:
             session.preview_max_size = preview_max_size
 
         self._render_preview(session)
+        self._save_session(session)
+        return session
+
+    def undo_adjustment(
+        self,
+        session_id: str,
+        *,
+        render_preview: bool = False,
+    ) -> SessionState:
+        """Move the session cursor to the previous committed state."""
+
+        session = self.get_session(session_id)
+        if not session.can_undo:
+            raise ValidationError(
+                f"Session '{session_id}' has no earlier history step.",
+                hint="Apply at least one edit before using undo.",
+            )
+        session.history_index -= 1
+        self._restore_current_step(session, render_preview=render_preview)
+        self._save_session(session)
+        return session
+
+    def redo_adjustment(
+        self,
+        session_id: str,
+        *,
+        render_preview: bool = False,
+    ) -> SessionState:
+        """Move the session cursor to the next committed state."""
+
+        session = self.get_session(session_id)
+        if not session.can_redo:
+            raise ValidationError(
+                f"Session '{session_id}' has no later history step.",
+                hint="Undo to an earlier step before using redo.",
+            )
+        session.history_index += 1
+        self._restore_current_step(session, render_preview=render_preview)
         self._save_session(session)
         return session
 
@@ -217,6 +263,19 @@ class SessionManager:
             self._state_path(session),
         )
 
+    def _write_state_to_path(
+        self,
+        session: SessionState,
+        adjustments: AdjustmentState,
+        state_path: Path,
+    ) -> None:
+        backend = self._backend_for_session(session)
+        backend.write_state_file(
+            session.source,
+            adjustments,
+            state_path,
+        )
+
     def _render_preview(self, session: SessionState) -> None:
         backend = self._backend_for_session(session)
         sequence = len(session.preview_history) + 1
@@ -236,6 +295,8 @@ class SessionManager:
                 path=str(target_path),
             )
         )
+        session.current_step.preview_path = str(target_path)
+        session.current_step.preview_sequence = sequence
 
         if rendered_size is not None and (
             session.source.width is None
@@ -265,6 +326,68 @@ class SessionManager:
 
     def _preview_filename(self, sequence: int) -> str:
         return f"preview-{sequence:04d}.jpg"
+
+    def _history_state_path(self, session_dir: Path, sequence: int) -> Path:
+        return session_dir / "history" / f"step-{sequence:04d}.pp3"
+
+    def _next_step_id(self, sequence: int) -> str:
+        return f"{sequence + 1:04d}"
+
+    def _append_history_step(
+        self,
+        session: SessionState,
+        *,
+        adjustments: AdjustmentState,
+        kind: str,
+        render_preview: bool,
+    ) -> SessionState:
+        session.history = session.history[: session.history_index + 1]
+        sequence = len(session.history) + 1
+        step = HistoryStep(
+            step_id=self._next_step_id(len(session.history)),
+            kind=kind,
+            adjustments=adjustments,
+            state_path=str(self._history_state_path(Path(session.workspace_dir), sequence)),
+        )
+        session.history.append(step)
+        session.history_index = len(session.history) - 1
+        self._commit_step_artifacts(session, step, render_preview=render_preview)
+        session.touch()
+        self._save_session(session)
+        return session
+
+    def _commit_step_artifacts(
+        self,
+        session: SessionState,
+        step: HistoryStep,
+        *,
+        render_preview: bool,
+    ) -> None:
+        step_state_path = Path(step.state_path) if step.state_path else self._state_path(session)
+        self._write_state_to_path(session, step.adjustments, step_state_path)
+        session.adjustments = step.adjustments.model_copy(deep=True)
+        session.state_path = str(self._state_path(session))
+        self._write_state(session)
+        if render_preview:
+            self._render_preview(session)
+        else:
+            session.preview_path = step.preview_path or session.preview_path
+        session.touch()
+
+    def _restore_current_step(
+        self,
+        session: SessionState,
+        *,
+        render_preview: bool,
+    ) -> None:
+        step = session.current_step
+        session.adjustments = step.adjustments.model_copy(deep=True)
+        self._write_state(session)
+        if render_preview:
+            self._render_preview(session)
+        else:
+            session.preview_path = step.preview_path or session.preview_path
+        session.touch()
 
     def _save_session(self, session: SessionState) -> None:
         manifest_path = self._manifest_path(session.session_id)

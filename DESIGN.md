@@ -57,11 +57,12 @@ The design is intentionally opinionated around agent ergonomics:
 
 1. Create an edit session from an input image path.
 2. Generate a canonical `session.pp3` and an initial preview artifact.
-3. Inspect current edit state, preview path, and preview count.
+3. Inspect current edit state, preview path, preview count, and history cursor state.
 4. Apply structured adjustments.
-5. Re-render the preview when you want a fresh artifact.
-6. Repeat until the result is acceptable.
-7. Export a final image explicitly.
+5. Move backward or forward with undo / redo when needed.
+6. Re-render the preview when you want a fresh artifact for the current step.
+7. Repeat until the result is acceptable.
+8. Export a final image explicitly.
 
 ## Public MCP API
 
@@ -87,6 +88,8 @@ Output:
 
 The initial preview is stored as the first numbered artifact, and later preview renders append additional artifacts without overwriting older files.
 
+The initial session also creates the first semantic history step.
+
 ### `render_preview`
 
 Regenerates the current session preview and appends a new preview artifact to the session history.
@@ -96,6 +99,7 @@ Output:
 - latest preview path
 - preview count
 - preview history
+- history cursor metadata
 
 ### `get_edit_session`
 
@@ -112,6 +116,14 @@ Resets all or selected adjustment keys back to defaults.
 ### `export_image`
 
 Exports the current session state to an explicit output path.
+
+### `undo_adjustment`
+
+Moves the session cursor to the previous committed semantic edit state.
+
+### `redo_adjustment`
+
+Moves the session cursor to the next committed semantic edit state.
 
 ### `list_supported_adjustments`
 
@@ -175,13 +187,19 @@ Session artifacts:
 
 - `session.json`
 - `session.pp3`
+- `history/step-0001.pp3`, `history/step-0002.pp3`, ...
 - `preview-0001.jpg`, `preview-0002.jpg`, ...
 - temporary render outputs
 
 Rules:
 
 - source images are never modified
-- previews are preserved as session history artifacts
+- `session.json` is the authoritative edit-history timeline
+- `history_index` identifies the current semantic edit step
+- `session.pp3` is the current materialized backend state
+- immutable per-step `PP3` snapshots are preserved under `history/`
+- previews are preserved as render-history artifacts
+- preview history is separate from semantic edit history
 - exports are explicit user-requested outputs
 - paths are validated before use
 
@@ -225,7 +243,6 @@ This deliberately trades breadth for clarity and implementation reliability.
 ## Future Improvements
 
 - histogram and metadata inspection helpers
-- undo / redo and preview history
 - compare current preview against prior preview
 - copy an edit recipe across multiple images
 - export presets such as preview, social, and full-res

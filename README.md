@@ -4,6 +4,8 @@ An MCP server for agent-driven photo editing with RawTherapee.
 
 The server exposes a session-based editing workflow instead of raw sidecar manipulation. Agents create an edit session, apply structured adjustments, regenerate previews when needed, and export a final image. Internally the server writes session-owned RawTherapee `PP3` files and renders them through `rawtherapee-cli`.
 
+Each session now also maintains an explicit undo / redo timeline in `session.json`. Semantic edit history is tracked separately from preview-render history.
+
 ## Status
 
 This is an MVP implementation.
@@ -200,18 +202,22 @@ gemini skills list
 - `render_preview`
 - `apply_adjustments`
 - `reset_adjustments`
+- `undo_adjustment`
+- `redo_adjustment`
 - `export_image`
 - `list_supported_adjustments`
 
 `render_preview` regenerates the current session preview, appends a new preview artifact, and returns the latest `preview_count`.
+`undo_adjustment` and `redo_adjustment` move the session cursor across committed edit states without creating new edit-history entries.
 
 ## Typical Agent Workflow
 
 1. Create a session from an input image.
-2. Inspect the returned preview image, `preview_count`, and current adjustment state.
+2. Inspect the returned preview image, `preview_count`, current adjustment state, and history cursor fields such as `history_index`, `history_length`, `can_undo`, and `can_redo`.
 3. Apply one or more adjustments.
-4. Re-check the preview by calling `render_preview` whenever you want a fresh preview artifact.
-5. Export a final image explicitly.
+4. Use `undo_adjustment` or `redo_adjustment` when you need to move across committed edit steps.
+5. Re-check the preview by calling `render_preview` whenever you want a fresh preview artifact for the current step.
+6. Export a final image explicitly.
 
 See [SKILL.md](skills/mcp-photo-edit/SKILL.md) for an agent-facing usage guide.
 
@@ -233,6 +239,15 @@ Backend note:
 
 - the current implementation targets RawTherapee `PP3`
 - `list_supported_adjustments` is the source of truth for runtime support
+
+## Session History
+
+- `session.json` is the authoritative session timeline.
+- `history` stores committed semantic edit steps.
+- `history_index` points to the current step.
+- `session.pp3` is the current materialized backend state.
+- `render_preview` appends preview artifacts but does not append semantic edit history.
+- Applying a new edit after undo truncates the redo tail.
 
 ## Project Layout
 
