@@ -61,6 +61,11 @@ Not in scope:
 - `uv` for the easiest local install and run workflow
 - `rawtherapee-cli` on `PATH`
 
+### Tested Environment
+
+- **OS:** Ubuntu 24.04 LTS
+- **RawTherapee:** v5.10 (CLI)
+
 Install the project with `uv`:
 
 ```bash
@@ -202,7 +207,7 @@ gemini skills list
 
 ## Compatibility Note
 
-RAW support depends on the local RawTherapee build and its bundled RAW decoders. A file extension being supported in principle does not guarantee that every camera or compression variant will decode on every machine. When diagnosing unsupported RAW files, check the installed RawTherapee version and the camera / compression mode used by the source file.
+RAW support depends on the local RawTherapee build and its bundled RAW decoders. A file extension being supported in principle does not guarantee that every camera or compression variant will decode on every machine. When diagnosing unsupported RAW files, check the installed RawTherapee version and the camera / compression mode used by the source file. For reference, this project is primarily developed and tested on the environment described in the [Tested Environment](#tested-environment) section.
 
 **Note on Nikon RAW:** Some compressed Nikon RAW formats (e.g., High Efficiency / HE* compression) may not be supported by the underlying libraries in current RawTherapee builds. If you encounter issues with Nikon files, try using uncompressed RAW or Lossless Compressed modes if available in-camera.
 
