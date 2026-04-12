@@ -1,25 +1,30 @@
 # mcp-photo-edit
 
-An MCP server for agent-driven photo editing with pluggable RAW backends.
+An MCP server for agent-driven photo editing with RawTherapee.
 
-The server exposes a session-based editing workflow instead of raw sidecar manipulation. Agents create an edit session, apply structured adjustments, render previews, and export a final image. The current default backend writes session-owned RawTherapee `PP3` files and renders them through `rawtherapee-cli`. A darktable backend remains available as an optional fallback.
+The server exposes a session-based editing workflow instead of raw sidecar manipulation. Agents create an edit session, apply structured adjustments, render previews, and export a final image. Internally the server writes session-owned RawTherapee `PP3` files and renders them through `rawtherapee-cli`.
 
 ## Status
 
 This is an MVP implementation.
+
+Important backend notice:
+
+- `rawtherapee-cli` is the supported backend.
+- The legacy `darktable-cli` backend is not stable and will be removed in a future cleanup.
 
 Current focus:
 
 - session-based editing flow
 - structured adjustment schema
 - `rawtherapee-cli` preview and export
-- Nikon NEF and common raster inputs when supported by the local backend build
+- RAW and common raster inputs when supported by the local RawTherapee build
 
 Not in scope yet:
 
 - local masks
 - healing / AI retouch
-- full darktable module coverage
+- full photo-editor feature coverage
 - large preset libraries
 - batch editing UX
 
@@ -27,10 +32,6 @@ Not in scope yet:
 
 - Python 3.12+
 - `rawtherapee-cli` on `PATH`
-
-Optional fallback backend:
-
-- `darktable-cli` on `PATH`
 
 Install the project:
 
@@ -46,9 +47,7 @@ rawtherapee-cli -v
 
 ## Important Compatibility Note
 
-RAW support depends on the local backend build and its bundled RAW decoders. A file extension being supported by a backend does not guarantee that every camera or compression variant will decode on every machine.
-
-On this machine, the bundled sample Nikon Z50_2 `.NEF` files under `.codex/raw/` do not decode successfully with `darktable 4.6.1` because RawSpeed does not recognize that camera variant. The default RawTherapee backend can process the Nikon Z6II `.NEF` samples under `.codex/raw-z62`.
+RAW support depends on the local RawTherapee build and its bundled RAW decoders. A file extension being supported in principle does not guarantee that every camera or compression variant will decode on every machine. When diagnosing unsupported RAW files, check the installed RawTherapee version and the camera / compression mode used by the source file.
 
 ## Running The Server
 
@@ -78,8 +77,6 @@ Example stdio configuration:
 ```
 
 ### Codex CLI
-
-Codex reads MCP configuration from `~/.codex/config.toml`.
 
 Add this block:
 
@@ -112,8 +109,6 @@ Use the `photo-edit` MCP server for photo-editing tasks. Create an edit session 
 ```
 
 ### Gemini CLI
-
-Gemini CLI stores user MCP config in `~/.gemini/settings.json`. Project-local config can also live in `.gemini/settings.json`.
 
 Add this block:
 
@@ -175,7 +170,7 @@ See [docs/AGENT_SKILL.md](docs/AGENT_SKILL.md) for an agent-facing usage guide.
 
 ## Adjustment Model
 
-The public API exposes a stable edit schema. It does not expose raw darktable module XML or ask clients to hand-author XMP.
+The public API exposes a stable edit schema. It does not ask clients to hand-author backend profile files.
 
 Current default-backend MVP adjustments:
 
@@ -189,8 +184,8 @@ Use `list_supported_adjustments` to discover exact ranges, defaults, and example
 
 Backend note:
 
-- `rawtherapee-cli` is the default backend and now covers the current MVP adjustment set
-- `darktable-cli` remains available as an optional fallback backend during the transition
+- the current implementation targets RawTherapee `PP3`
+- `list_supported_adjustments` is the source of truth for runtime support
 
 ## Project Layout
 
@@ -199,7 +194,6 @@ src/mcp_photo_edit/
   models.py        Pydantic schemas and validation
   session.py       Session lifecycle and persistence
   pp3.py           Adjustment to RawTherapee PP3 translation
-  xmp.py           Legacy darktable XMP translation
   render.py        Backend integrations
   server.py        MCP tool registration
 tests/
@@ -222,6 +216,6 @@ pytest
 
 ## Disclaimers
 
-- This project invokes external CLI backends such as `rawtherapee-cli` and `darktable-cli`; it does not embed or redistribute their internals.
-- Exact visual behavior depends on the local backend version, decoder support, ICC setup, and the input file.
+- This project invokes `rawtherapee-cli`; it does not embed or redistribute RawTherapee internals.
+- Exact visual behavior depends on the local RawTherapee version, decoder support, ICC setup, and the input file.
 - The server never modifies the original source image. It writes session artifacts and backend state files in a managed workspace.

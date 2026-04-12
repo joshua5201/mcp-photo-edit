@@ -2,7 +2,12 @@
 
 ## Summary
 
-`mcp-photo-edit` is this MCP server for agent-driven photo editing. The public contract is a stable, structured edit schema and a session-based workflow. The server currently uses RawTherapee as the default backend and keeps backend-specific state internal. A darktable backend remains available during the transition.
+`mcp-photo-edit` is an MCP server for agent-driven photo editing. The public contract is a stable, structured edit schema and a session-based workflow. Internally the server maps that schema into RawTherapee `PP3` state and renders previews / exports through `rawtherapee-cli`.
+
+Current backend policy:
+
+- RawTherapee is the supported backend.
+- The legacy `darktable-cli` backend is not stable and is planned for removal.
 
 The design is intentionally opinionated around agent ergonomics:
 
@@ -16,7 +21,7 @@ The design is intentionally opinionated around agent ergonomics:
 ### What was already strong
 
 - The self-feedback loop was the right product shape from the start.
-- Using darktable/XMP is pragmatic and keeps implementation leverage high.
+- Using a mature external RAW processor is pragmatic and keeps implementation leverage high.
 - Preview-first iteration matches how agents reason about visual edits.
 
 ### Gaps in the original draft and the adopted fixes
@@ -37,14 +42,14 @@ The design is intentionally opinionated around agent ergonomics:
 - Support end-to-end agent editing on RAW and common raster inputs.
 - Keep the public MCP surface simple and stable.
 - Preserve original source files.
-- Isolate darktable-specific details behind an adapter layer.
+- Isolate RawTherapee-specific details behind an adapter layer.
 - Make the server easy for agents to learn at runtime.
 
 ## Non-Goals
 
-- Arbitrary darktable module coverage
-- Raw XMP editing as a public interface
-- Full photo-editor parity with darktable’s entire module surface
+- Arbitrary RawTherapee control coverage
+- Raw `PP3` editing as a public interface
+- Full photo-editor parity with RawTherapee’s entire control surface
 - AI retouching, masks, healing, or object removal
 - Multi-user orchestration
 
@@ -100,7 +105,7 @@ Returns supported keys, ranges, defaults, units, descriptions, and example paylo
 
 ## Adjustment Schema
 
-The public adjustment schema is intentionally narrower than darktable’s full feature set.
+The public adjustment schema is intentionally narrower than RawTherapee’s full feature set.
 
 Current MVP keys:
 
@@ -119,7 +124,7 @@ Rules:
 
 Current implementation note:
 
-The adapter writes native `darktable:*` history entries. The initial MVP only exposes adjustments whose module parameters are practical to encode safely from darktable source. Broader support such as white balance, shadows, highlights, vibrance, or continuous rotation can be added later without changing the session workflow.
+The adapter writes native RawTherapee `PP3` settings. The initial MVP only exposes adjustments whose profile parameters are practical to encode safely and validate with real renders. Broader support such as white balance, shadows, highlights, vibrance, or continuous rotation can be added later without changing the session workflow.
 
 ## Architecture
 
@@ -138,12 +143,12 @@ The adapter writes native `darktable:*` history entries. The initial MVP only ex
 
 ### Backend State Adapter Layer
 
-- converts the domain schema into backend-native state such as RawTherapee `PP3` or darktable XMP
+- converts the domain schema into backend-native `PP3`
 - keeps sidecar details out of the public API
 
 ### Render Backend Layer
 
-- executes `darktable-cli`
+- executes `rawtherapee-cli`
 - normalizes preview/export output locations
 - isolates backend-specific behavior and errors
 
@@ -154,7 +159,7 @@ Each session has a managed workspace under the configured runtime root.
 Session artifacts:
 
 - `session.json`
-- `session.xmp`
+- `session.pp3`
 - `preview.jpg`
 - temporary render outputs
 

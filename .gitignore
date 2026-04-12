@@ -3,5 +3,7 @@
 .pip-deps/
 .pytest_cache/
 .venv/
+.testdata
+.gemini
 __pycache__/
 *.egg-info/
