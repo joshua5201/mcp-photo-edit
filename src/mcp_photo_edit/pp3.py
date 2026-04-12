@@ -33,6 +33,77 @@ def build_pp3(
         "CurveMode2=Standard",
     ]
 
+    if adjustments.rgb_mixer is not None and not adjustments.rgb_mixer.is_identity():
+        lines.extend(
+            [
+                "",
+                "[Channel Mixer]",
+                "Enabled=true",
+                f"Red={_fmt_channel_mixer_row(adjustments.rgb_mixer.red)}",
+                f"Green={_fmt_channel_mixer_row(adjustments.rgb_mixer.green)}",
+                f"Blue={_fmt_channel_mixer_row(adjustments.rgb_mixer.blue)}",
+            ]
+        )
+
+    if _has_denoise(adjustments):
+        lines.extend(
+            [
+                "",
+                "[Directional Pyramid Denoising]",
+                "Enabled=true",
+                "Enhance=false",
+                "Median=false",
+                f"Luma={_fmt(adjustments.denoise_luma)}",
+                f"Ldetail={_fmt(adjustments.denoise_detail)}",
+                f"Chroma={_fmt(adjustments.denoise_chroma)}",
+                "Method=Lab",
+                "LMethod=SLI",
+                "CMethod=MAN",
+                "C2Method=AUTO",
+                "SMethod=shal",
+                "MedMethod=soft",
+                "RGBMethod=soft",
+                "MethodMed=none",
+                "Redchro=0",
+                "Bluechro=0",
+                "AutoGain=true",
+                "Gamma=1.7",
+                "Passes=1",
+                "LCurve=0;",
+                "CCCurve=0;",
+            ]
+        )
+
+    if adjustments.color_temperature is not None or adjustments.green_balance is not None:
+        lines.extend(
+            [
+                "",
+                "[White Balance]",
+                "Enabled=true",
+                "Setting=Custom",
+                f"Temperature={_fmt(adjustments.color_temperature or 6504.0)}",
+                f"Green={_fmt(adjustments.green_balance or 1.0)}",
+                "Equal=1",
+                "TemperatureBias=0",
+                "CompatibilityVersion=2",
+            ]
+        )
+
+    if adjustments.highlights != 0.0 or adjustments.shadows != 0.0:
+        lines.extend(
+            [
+                "",
+                "[Shadows & Highlights]",
+                "Enabled=true",
+                f"Highlights={_fmt(adjustments.highlights)}",
+                "HighlightTonalWidth=70",
+                f"Shadows={_fmt(adjustments.shadows)}",
+                "ShadowTonalWidth=30",
+                "Radius=40",
+                "Lab=false",
+            ]
+        )
+
     if adjustments.orientation != 0:
         lines.extend(
             [
@@ -75,6 +146,22 @@ def _coarse_rotation_value(orientation: int) -> int:
         180: 180,
     }
     return mapping[orientation]
+
+
+def _fmt_channel_mixer_row(row: tuple[float, float, float]) -> str:
+    values = [str(round(channel * 10)) for channel in row]
+    return ";".join(values) + ";"
+
+
+def _has_denoise(adjustments: AdjustmentState) -> bool:
+    return any(
+        value != 0.0
+        for value in (
+            adjustments.denoise_luma,
+            adjustments.denoise_detail,
+            adjustments.denoise_chroma,
+        )
+    )
 
 
 def _crop_box_pixels(

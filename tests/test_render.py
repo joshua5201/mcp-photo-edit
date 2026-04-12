@@ -3,7 +3,7 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
-from mcp_photo_edit.models import AdjustmentState, CropAdjustment, SourceImageInfo
+from mcp_photo_edit.models import AdjustmentState, CropAdjustment, RGBMixer, SourceImageInfo
 from mcp_photo_edit.render import RawTherapeeBackend
 
 
@@ -96,3 +96,40 @@ def test_rawtherapee_write_state_file_includes_rotation_and_crop(tmp_path: Path)
     assert "Y=1008" in pp3
     assert "W=3028" in pp3
     assert "H=2016" in pp3
+
+
+def test_rawtherapee_write_state_file_includes_new_adjustment_blocks(tmp_path: Path) -> None:
+    backend = RawTherapeeBackend()
+    profile = tmp_path / "session.pp3"
+    source = SourceImageInfo(
+        input_path=str(tmp_path / "source.nef"),
+        file_name="source.nef",
+        suffix=".nef",
+        width=4032,
+        height=6056,
+    )
+
+    backend.write_state_file(
+        source,
+        AdjustmentState(
+            rgb_mixer=RGBMixer(
+                red=(100.0, 0.0, 0.0),
+                green=(0.0, 95.0, 5.0),
+                blue=(0.0, 0.0, 100.0),
+            ),
+            denoise_luma=8.0,
+            denoise_detail=12.0,
+            denoise_chroma=16.0,
+            color_temperature=5100.0,
+            green_balance=0.98,
+            highlights=14.0,
+            shadows=20.0,
+        ),
+        profile,
+    )
+
+    pp3 = profile.read_text(encoding="utf-8")
+    assert "[Channel Mixer]" in pp3
+    assert "[Directional Pyramid Denoising]" in pp3
+    assert "[White Balance]" in pp3
+    assert "[Shadows & Highlights]" in pp3

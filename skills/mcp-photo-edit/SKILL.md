@@ -53,6 +53,9 @@ Use this skill when an agent should edit photos through the `photo-edit` MCP ser
 
 - `crop` uses normalized `0..1` coordinates.
 - `orientation` uses quarter turns: `-90`, `0`, `90`, `180`.
+- `rgb_mixer` uses per-output RGB rows in percentage units.
+- `denoise_luma`, `denoise_detail`, and `denoise_chroma` are separate controls.
+- `color_temperature` and `green_balance` provide manual white balance control.
 - Prefer incremental changes instead of large blind jumps.
 
 ## Example Patch
@@ -62,6 +65,12 @@ Use this skill when an agent should edit photos through the `photo-edit` MCP ser
   "exposure": 0.8,
   "contrast": 12,
   "saturation": 8,
+  "denoise_luma": 10,
+  "denoise_chroma": 18,
+  "color_temperature": 5200,
+  "green_balance": 1.03,
+  "highlights": 12,
+  "shadows": 16,
   "orientation": 90,
   "crop": {
     "left": 0.1,

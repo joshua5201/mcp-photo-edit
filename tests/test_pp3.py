@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from mcp_photo_edit.models import AdjustmentState
+from mcp_photo_edit.models import AdjustmentState, RGBMixer
 from mcp_photo_edit.pp3 import build_pp3
 
 
@@ -38,3 +38,41 @@ def test_build_pp3_contains_rotation_and_crop_blocks() -> None:
     assert "Y=1008" in pp3
     assert "W=3028" in pp3
     assert "H=2016" in pp3
+
+
+def test_build_pp3_contains_rgb_mixer_denoise_white_balance_and_tone_blocks() -> None:
+    pp3 = build_pp3(
+        AdjustmentState(
+            rgb_mixer=RGBMixer(
+                red=(100.0, 0.0, 0.0),
+                green=(0.0, 92.5, 7.5),
+                blue=(5.0, 0.0, 95.0),
+            ),
+            denoise_luma=10.0,
+            denoise_detail=20.0,
+            denoise_chroma=30.0,
+            color_temperature=5400.0,
+            green_balance=1.02,
+            highlights=12.0,
+            shadows=18.0,
+        ),
+        image_width=4032,
+        image_height=6056,
+    )
+
+    assert "[Channel Mixer]" in pp3
+    assert "Enabled=true" in pp3
+    assert "Red=1000;0;0;" in pp3
+    assert "Green=0;925;75;" in pp3
+    assert "Blue=50;0;950;" in pp3
+    assert "[Directional Pyramid Denoising]" in pp3
+    assert "Luma=10" in pp3
+    assert "Ldetail=20" in pp3
+    assert "Chroma=30" in pp3
+    assert "[White Balance]" in pp3
+    assert "Setting=Custom" in pp3
+    assert "Temperature=5400" in pp3
+    assert "Green=1.02" in pp3
+    assert "[Shadows & Highlights]" in pp3
+    assert "Highlights=12" in pp3
+    assert "Shadows=18" in pp3

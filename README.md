@@ -239,6 +239,14 @@ Current default-backend MVP adjustments:
 - `exposure`
 - `contrast`
 - `saturation`
+- `rgb_mixer`
+- `denoise_luma`
+- `denoise_detail`
+- `denoise_chroma`
+- `color_temperature`
+- `green_balance`
+- `highlights`
+- `shadows`
 - `orientation`
 - `crop`
 

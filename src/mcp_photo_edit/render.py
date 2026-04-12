@@ -59,7 +59,21 @@ class RawTherapeeBackend:
 
     backend_id = "rawtherapee-cli"
     state_file_name = "session.pp3"
-    supported_adjustment_names = ("exposure", "contrast", "saturation", "orientation", "crop")
+    supported_adjustment_names = (
+        "exposure",
+        "contrast",
+        "saturation",
+        "rgb_mixer",
+        "denoise_luma",
+        "denoise_detail",
+        "denoise_chroma",
+        "color_temperature",
+        "green_balance",
+        "highlights",
+        "shadows",
+        "orientation",
+        "crop",
+    )
 
     def __init__(
         self,

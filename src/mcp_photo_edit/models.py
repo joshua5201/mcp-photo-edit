@@ -44,6 +44,74 @@ ADJUSTMENT_SPECS: dict[str, dict[str, Any]] = {
         "description": "Quarter-turn orientation. Allowed values are -90, 0, 90, 180.",
         "example": 90,
     },
+    "rgb_mixer": {
+        "minimum": -500.0,
+        "maximum": 500.0,
+        "default": None,
+        "unit": "percent_triplets",
+        "description": "Per-output RGB channel mixer rows for red, green, and blue output channels.",
+        "example": {
+            "red": [100.0, 0.0, 0.0],
+            "green": [0.0, 95.0, 5.0],
+            "blue": [0.0, 0.0, 100.0],
+        },
+    },
+    "denoise_luma": {
+        "minimum": 0.0,
+        "maximum": 100.0,
+        "default": 0.0,
+        "unit": "strength",
+        "description": "Luminance noise reduction strength.",
+        "example": 20.0,
+    },
+    "denoise_detail": {
+        "minimum": 0.0,
+        "maximum": 100.0,
+        "default": 0.0,
+        "unit": "strength",
+        "description": "Luminance detail preservation during denoising.",
+        "example": 15.0,
+    },
+    "denoise_chroma": {
+        "minimum": 0.0,
+        "maximum": 100.0,
+        "default": 0.0,
+        "unit": "strength",
+        "description": "Chrominance noise reduction strength.",
+        "example": 25.0,
+    },
+    "color_temperature": {
+        "minimum": 1500.0,
+        "maximum": 60000.0,
+        "default": None,
+        "unit": "kelvin",
+        "description": "Manual white balance color temperature.",
+        "example": 5200.0,
+    },
+    "green_balance": {
+        "minimum": 0.02,
+        "maximum": 100.0,
+        "default": None,
+        "unit": "scale",
+        "description": "Manual white balance green-magenta balance.",
+        "example": 1.05,
+    },
+    "highlights": {
+        "minimum": 0.0,
+        "maximum": 100.0,
+        "default": 0.0,
+        "unit": "strength",
+        "description": "Highlight recovery strength.",
+        "example": 18.0,
+    },
+    "shadows": {
+        "minimum": 0.0,
+        "maximum": 100.0,
+        "default": 0.0,
+        "unit": "strength",
+        "description": "Shadow recovery strength.",
+        "example": 22.0,
+    },
 }
 
 RESETTABLE_FIELDS = tuple(ADJUSTMENT_SPECS.keys()) + ("crop",)
@@ -82,12 +150,47 @@ class CropAdjustment(BaseModel):
         return self
 
 
+class RGBMixer(BaseModel):
+    """Per-output RGB channel mixing matrix in percentage units."""
+
+    red: tuple[float, float, float] = (100.0, 0.0, 0.0)
+    green: tuple[float, float, float] = (0.0, 100.0, 0.0)
+    blue: tuple[float, float, float] = (0.0, 0.0, 100.0)
+
+    @field_validator("red", "green", "blue")
+    @classmethod
+    def validate_row(
+        cls,
+        value: tuple[float, float, float],
+    ) -> tuple[float, float, float]:
+        """Require exactly three bounded channel weights per row."""
+
+        if len(value) != 3:
+            raise ValueError("rgb_mixer rows must contain exactly three channel weights")
+        if any(channel < -500.0 or channel > 500.0 for channel in value):
+            raise ValueError("rgb_mixer values must be between -500 and 500")
+        return value
+
+    def is_identity(self) -> bool:
+        """Whether the mixer matches the default channel routing."""
+
+        return self == RGBMixer()
+
+
 class AdjustmentState(BaseModel):
     """Full normalized edit state for a session."""
 
     exposure: float = Field(default=0.0, ge=-5.0, le=5.0)
     contrast: float = Field(default=0.0, ge=-100.0, le=100.0)
     saturation: float = Field(default=0.0, ge=-100.0, le=100.0)
+    rgb_mixer: RGBMixer | None = None
+    denoise_luma: float = Field(default=0.0, ge=0.0, le=100.0)
+    denoise_detail: float = Field(default=0.0, ge=0.0, le=100.0)
+    denoise_chroma: float = Field(default=0.0, ge=0.0, le=100.0)
+    color_temperature: float | None = Field(default=None, ge=1500.0, le=60000.0)
+    green_balance: float | None = Field(default=None, ge=0.02, le=100.0)
+    highlights: float = Field(default=0.0, ge=0.0, le=100.0)
+    shadows: float = Field(default=0.0, ge=0.0, le=100.0)
     orientation: int = 0
     crop: CropAdjustment | None = None
 
@@ -126,6 +229,14 @@ class AdjustmentPatch(BaseModel):
     exposure: float | None = Field(default=None, ge=-5.0, le=5.0)
     contrast: float | None = Field(default=None, ge=-100.0, le=100.0)
     saturation: float | None = Field(default=None, ge=-100.0, le=100.0)
+    rgb_mixer: RGBMixer | None = None
+    denoise_luma: float | None = Field(default=None, ge=0.0, le=100.0)
+    denoise_detail: float | None = Field(default=None, ge=0.0, le=100.0)
+    denoise_chroma: float | None = Field(default=None, ge=0.0, le=100.0)
+    color_temperature: float | None = Field(default=None, ge=1500.0, le=60000.0)
+    green_balance: float | None = Field(default=None, ge=0.02, le=100.0)
+    highlights: float | None = Field(default=None, ge=0.0, le=100.0)
+    shadows: float | None = Field(default=None, ge=0.0, le=100.0)
     orientation: int | None = None
     crop: CropAdjustment | None = None
 
@@ -148,7 +259,7 @@ class AdjustmentSpec(BaseModel):
     default: float | int | None
     unit: str
     description: str
-    example: float | int | dict[str, float]
+    example: Any
 
 
 class SourceImageInfo(BaseModel):

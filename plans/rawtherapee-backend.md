@@ -11,22 +11,27 @@ This document tracks the forward-looking roadmap for the RawTherapee-backed impl
   - `exposure`
   - `contrast`
   - `saturation`
+  - `rgb_mixer`
+  - `denoise_luma`
+  - `denoise_detail`
+  - `denoise_chroma`
+  - `color_temperature`
+  - `green_balance`
+  - `highlights`
+  - `shadows`
   - `orientation`
   - `crop`
 
 ## Near-Term Priorities
 
-- [ ] remove the unstable legacy `darktable-cli` backend
-- [ ] simplify code paths after darktable removal
+- [x] remove the unstable legacy `darktable-cli` backend
+- [x] simplify code paths after darktable removal
 - [ ] record backend version and render metadata more explicitly in session manifests
 - [ ] improve preview performance without changing edit semantics
 - [ ] improve preview/export consistency checks
 
 ## Adjustment Expansion
 
-- [ ] white balance
-- [ ] highlights
-- [ ] shadows
 - [ ] vibrance
 - [ ] continuous rotation if semantics are stable
 - [ ] additional tone and color controls that map cleanly to `PP3`

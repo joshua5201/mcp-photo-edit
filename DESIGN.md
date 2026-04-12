@@ -138,12 +138,21 @@ Current MVP keys:
 - `exposure`
 - `contrast`
 - `saturation`
+- `rgb_mixer`
+- `denoise_luma`
+- `denoise_detail`
+- `denoise_chroma`
+- `color_temperature`
+- `green_balance`
+- `highlights`
+- `shadows`
 - `orientation`
 - `crop`
 
 Rules:
 
 - scalar values use bounded ranges
+- `rgb_mixer` uses per-output RGB rows in percentage units
 - crop coordinates are normalized to `0..1`
 - orientation uses quarter-turn values: `-90`, `0`, `90`, `180`
 - preview and export work from the same logical session state
@@ -151,7 +160,7 @@ Rules:
 
 Current implementation note:
 
-The adapter writes native RawTherapee `PP3` settings. The initial MVP only exposes adjustments whose profile parameters are practical to encode safely and validate with real renders. Broader support such as white balance, shadows, highlights, vibrance, or continuous rotation can be added later without changing the session workflow.
+The adapter writes native RawTherapee `PP3` settings. The current MVP exposes core tone controls, channel mixing, denoise, manual white balance, and highlight / shadow recovery. Broader support such as vibrance or continuous rotation can be added later without changing the session workflow.
 
 ## Architecture
 
@@ -248,4 +257,4 @@ This deliberately trades breadth for clarity and implementation reliability.
 - export presets such as preview, social, and full-res
 - reusable saved edit recipes
 - selective batch application
-- native support for white balance, highlights, shadows, vibrance, and continuous rotation
+- native support for vibrance and continuous rotation

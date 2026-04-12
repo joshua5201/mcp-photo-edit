@@ -221,6 +221,38 @@ def test_apply_after_undo_truncates_redo_tail(tmp_path: Path) -> None:
     assert branched.can_redo is False
 
 
+def test_list_supported_adjustments_includes_new_rawtherapee_controls(tmp_path: Path) -> None:
+    backend = DummyBackend()
+    backend.supported_adjustment_names = (
+        "exposure",
+        "contrast",
+        "saturation",
+        "rgb_mixer",
+        "denoise_luma",
+        "denoise_detail",
+        "denoise_chroma",
+        "color_temperature",
+        "green_balance",
+        "highlights",
+        "shadows",
+        "orientation",
+        "crop",
+    )
+    manager = SessionManager(workspace_root=tmp_path / "workspace", backend=backend)
+
+    supported = {spec.name: spec for spec in manager.list_supported_adjustments()}
+
+    assert "rgb_mixer" in supported
+    assert supported["rgb_mixer"].unit == "percent_triplets"
+    assert supported["denoise_luma"].maximum == 100.0
+    assert supported["denoise_detail"].maximum == 100.0
+    assert supported["denoise_chroma"].maximum == 100.0
+    assert supported["color_temperature"].minimum == 1500.0
+    assert supported["green_balance"].default is None
+    assert supported["highlights"].maximum == 100.0
+    assert supported["shadows"].maximum == 100.0
+
+
 def test_export_uses_cursor_selected_state(tmp_path: Path) -> None:
     source = tmp_path / "source.ppm"
     source.write_text("P3\n1 1\n255\n255 0 0\n", encoding="utf-8")
