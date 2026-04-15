@@ -15,13 +15,14 @@ from .models import (
     AdjustmentPatch,
     AdjustmentSpec,
     AdjustmentState,
+    DiagnosticSummary,
     HistoryStep,
     PreviewArtifact,
     SessionState,
     SourceImageInfo,
     utc_now,
 )
-from .render import RenderBackend, build_backend_registry, normalize_backend_name
+from .render import AdvancedImageInfoRenderer, RenderBackend, build_backend_registry, normalize_backend_name
 
 
 class SessionManager:
@@ -55,6 +56,7 @@ class SessionManager:
         self.advanced_image_info_enabled = not _env_flag_enabled(
             os.environ.get("DISABLE_ADVANCED_IMAGE_INFO")
         )
+        self._advanced_image_info_renderer = AdvancedImageInfoRenderer()
         self.workspace_root.mkdir(parents=True, exist_ok=True)
 
     def create_session(
@@ -300,6 +302,7 @@ class SessionManager:
         )
         session.current_step.preview_path = str(target_path)
         session.current_step.preview_sequence = sequence
+        self._sync_diagnostic_artifacts(session, sequence, target_path)
 
         if rendered_size is not None and (
             session.source.width is None
@@ -309,10 +312,44 @@ class SessionManager:
             session.source.width, session.source.height = rendered_size
         session.last_rendered_at = utc_now()
 
+    def _sync_diagnostic_artifacts(
+        self,
+        session: SessionState,
+        sequence: int,
+        preview_path: Path,
+    ) -> None:
+        if not self.advanced_image_info_enabled:
+            session.diagnostic_dashboard_path = None
+            session.diagnostic_summary = None
+            session.current_step.diagnostic_dashboard_path = None
+            session.current_step.diagnostic_summary = None
+            return
+
+        dashboard_path = Path(session.workspace_dir) / self._diagnostic_filename(sequence)
+        try:
+            diagnostic_summary: DiagnosticSummary = self._advanced_image_info_renderer.render(
+                preview_path,
+                dashboard_path,
+            )
+        except Exception:  # noqa: BLE001 - fail open so preview rendering still succeeds
+            session.diagnostic_dashboard_path = None
+            session.diagnostic_summary = None
+            session.current_step.diagnostic_dashboard_path = None
+            session.current_step.diagnostic_summary = None
+            return
+
+        session.diagnostic_dashboard_path = str(dashboard_path)
+        session.diagnostic_summary = diagnostic_summary
+        session.current_step.diagnostic_dashboard_path = str(dashboard_path)
+        session.current_step.diagnostic_summary = diagnostic_summary.model_copy(deep=True)
+
     def _apply_advanced_image_info_gate(self, session: SessionState) -> None:
         """Keep advanced image info stable when the feature is disabled."""
 
         if not self.advanced_image_info_enabled:
+            for step in session.history:
+                step.diagnostic_dashboard_path = None
+                step.diagnostic_summary = None
             session.diagnostic_dashboard_path = None
             session.diagnostic_summary = None
 
@@ -336,6 +373,9 @@ class SessionManager:
 
     def _preview_filename(self, sequence: int) -> str:
         return f"preview-{sequence:04d}.jpg"
+
+    def _diagnostic_filename(self, sequence: int) -> str:
+        return f"dashboard-{sequence:04d}.png"
 
     def _history_state_path(self, session_dir: Path, sequence: int) -> Path:
         return session_dir / "history" / f"step-{sequence:04d}.pp3"
@@ -382,6 +422,8 @@ class SessionManager:
             self._render_preview(session)
         else:
             session.preview_path = step.preview_path or session.preview_path
+            session.diagnostic_dashboard_path = step.diagnostic_dashboard_path
+            session.diagnostic_summary = step.diagnostic_summary
         session.touch()
 
     def _restore_current_step(
@@ -397,6 +439,8 @@ class SessionManager:
             self._render_preview(session)
         else:
             session.preview_path = step.preview_path or session.preview_path
+            session.diagnostic_dashboard_path = step.diagnostic_dashboard_path
+            session.diagnostic_summary = step.diagnostic_summary
         session.touch()
 
     def _save_session(self, session: SessionState) -> None:

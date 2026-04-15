@@ -6,7 +6,7 @@ import shutil
 import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field, computed_field, field_validator, model_validator
 
@@ -345,6 +345,51 @@ class PreviewArtifact(BaseModel):
     rendered_at: datetime = Field(default_factory=utc_now)
 
 
+class DiagnosticDimensions(BaseModel):
+    """Dimensions of the rendered image used for diagnostics."""
+
+    width: int
+    height: int
+
+
+class DiagnosticLumaSummary(BaseModel):
+    """Basic tonal distribution statistics."""
+
+    p01: float
+    p50: float
+    p99: float
+    clipped_black_pct: float
+    clipped_white_pct: float
+
+
+class DiagnosticRGBBalanceSummary(BaseModel):
+    """Channel balance summary for the rendered image."""
+
+    red_mean: float
+    green_mean: float
+    blue_mean: float
+    temperature_hint: str
+    tint_hint: str
+
+
+class DiagnosticSaturationSummary(BaseModel):
+    """Saturation distribution summary for the rendered image."""
+
+    p50: float
+    p95: float
+    high_saturation_pct: float
+
+
+class DiagnosticSummary(BaseModel):
+    """Honest diagnostics for the current rendered state."""
+
+    analysis_source: Literal["current_rendered_state"] = "current_rendered_state"
+    dimensions: DiagnosticDimensions
+    luma: DiagnosticLumaSummary
+    rgb_balance: DiagnosticRGBBalanceSummary
+    saturation: DiagnosticSaturationSummary
+
+
 class HistoryStep(BaseModel):
     """A committed semantic edit state."""
 
@@ -355,6 +400,8 @@ class HistoryStep(BaseModel):
     state_path: str | None = None
     preview_path: str | None = None
     preview_sequence: int | None = None
+    diagnostic_dashboard_path: str | None = None
+    diagnostic_summary: DiagnosticSummary | None = None
     description: str | None = None
 
 
@@ -399,7 +446,7 @@ class SessionState(BaseModel):
     xmp_path: str | None = None
     preview_path: str
     diagnostic_dashboard_path: str | None = None
-    diagnostic_summary: dict[str, Any] | None = None
+    diagnostic_summary: DiagnosticSummary | None = None
     preview_max_size: int = Field(default=1024, ge=64, le=4096)
     preview_history: list[PreviewArtifact] = Field(default_factory=list)
     adjustments: AdjustmentState = Field(default_factory=AdjustmentState)
@@ -480,7 +527,7 @@ class PreviewResult(BaseModel):
     session_id: str | None = None
     preview_path: str | None = None
     diagnostic_dashboard_path: str | None = None
-    diagnostic_summary: dict[str, Any] | None = None
+    diagnostic_summary: DiagnosticSummary | None = None
     preview_count: int | None = None
     preview_history: list[PreviewArtifact] = Field(default_factory=list)
     history_index: int | None = None

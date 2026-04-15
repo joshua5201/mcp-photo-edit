@@ -102,6 +102,11 @@ def test_sharpening_fields_validate_ranges() -> None:
 
 
 def test_session_and_preview_models_include_nullable_advanced_image_info_fields() -> None:
+    history_step = HistoryStep(
+        step_id="0001",
+        kind="init",
+        adjustments=AdjustmentState(),
+    )
     session = SessionState(
         session_id="session-123",
         source=SourceImageInfo(
@@ -126,6 +131,8 @@ def test_session_and_preview_models_include_nullable_advanced_image_info_fields(
     assert session.diagnostic_summary is None
     assert preview.diagnostic_dashboard_path is None
     assert preview.diagnostic_summary is None
+    assert history_step.diagnostic_dashboard_path is None
+    assert history_step.diagnostic_summary is None
     assert session.model_dump()["diagnostic_dashboard_path"] is None
     assert preview.model_dump()["diagnostic_summary"] is None
 

@@ -3,6 +3,8 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
+import pytest
+
 from mcp_photo_edit.models import AdjustmentState, CropAdjustment, RGBMixer, SourceImageInfo
 from mcp_photo_edit.render import RawTherapeeBackend
 
@@ -38,6 +40,56 @@ def test_rawtherapee_render_invokes_cli_with_pp3(monkeypatch, tmp_path: Path) ->
     assert "-p" in commands[0]
     assert str(profile) in commands[0]
     assert any(part.startswith("-j") for part in commands[0])
+
+
+def test_rawtherapee_render_preview_fails_when_backend_produces_no_file(
+    monkeypatch, tmp_path: Path
+) -> None:
+    def fake_which(name: str) -> str:
+        assert name == "rawtherapee-cli"
+        return "/usr/bin/rawtherapee-cli"
+
+    def fake_run(command: list[str], check: bool, capture_output: bool, text: bool):
+        return subprocess.CompletedProcess(command, 0, stdout="", stderr="")
+
+    monkeypatch.setattr("mcp_photo_edit.render.shutil.which", fake_which)
+    monkeypatch.setattr("mcp_photo_edit.render.subprocess.run", fake_run)
+
+    source = tmp_path / "source.nef"
+    profile = tmp_path / "session.pp3"
+    target = tmp_path / "preview.jpg"
+    source.write_text("raw", encoding="utf-8")
+    profile.write_text("[Exposure]\nCompensation=0\n", encoding="utf-8")
+
+    backend = RawTherapeeBackend()
+
+    with pytest.raises(Exception, match="without producing"):
+        backend.render_preview(source, profile, target, max_size=None)
+
+
+def test_rawtherapee_render_export_fails_when_backend_produces_no_file(
+    monkeypatch, tmp_path: Path
+) -> None:
+    def fake_which(name: str) -> str:
+        assert name == "rawtherapee-cli"
+        return "/usr/bin/rawtherapee-cli"
+
+    def fake_run(command: list[str], check: bool, capture_output: bool, text: bool):
+        return subprocess.CompletedProcess(command, 0, stdout="", stderr="")
+
+    monkeypatch.setattr("mcp_photo_edit.render.shutil.which", fake_which)
+    monkeypatch.setattr("mcp_photo_edit.render.subprocess.run", fake_run)
+
+    source = tmp_path / "source.nef"
+    profile = tmp_path / "session.pp3"
+    target = tmp_path / "export.jpg"
+    source.write_text("raw", encoding="utf-8")
+    profile.write_text("[Exposure]\nCompensation=0\n", encoding="utf-8")
+
+    backend = RawTherapeeBackend()
+
+    with pytest.raises(Exception, match="without producing"):
+        backend.render_export(source, profile, target)
 
 
 def test_rawtherapee_rejects_unsupported_geometry_adjustments(tmp_path: Path) -> None:
