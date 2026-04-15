@@ -348,48 +348,60 @@ class AdvancedImageInfoRenderer:
     def _draw_dashboard(self, image: Image.Image, summary: DiagnosticSummary, output_path: Path) -> None:
         canvas = Image.new("RGB", (self.dashboard_width, self.dashboard_height), "#f5f2eb")
         draw = ImageDraw.Draw(canvas)
-        title_font = self._font(28)
-        heading_font = self._font(20)
-        body_font = self._font(15)
+        title_font = self._font(30)
+        header_font = self._font(18)
+        section_font = self._font(22)
+        body_font = self._font(16)
         small_font = self._font(13)
+        label_font = self._font(19)
+        value_font = self._font(24)
 
         margin = 32
         draw.text((margin, 18), "Advanced Image Info", fill="#1a1a1a", font=title_font)
         draw.text(
-            (margin, 56),
-            f"analysis source: {summary.analysis_source}",
+            (margin, 58),
+            "Preview analysis for the current rendered state",
             fill="#555555",
             font=body_font,
         )
         draw.text(
-            (self.dashboard_width - 360, 56),
+            (self.dashboard_width - 372, 48),
             f"{summary.dimensions.width} x {summary.dimensions.height} px",
-            fill="#555555",
-            font=body_font,
+            fill="#49423a",
+            font=header_font,
+        )
+        draw.text(
+            (self.dashboard_width - 372, 78),
+            f"analysis source: {summary.analysis_source}",
+            fill="#6a645a",
+            font=small_font,
         )
 
-        histogram_box = (margin, 92, self.dashboard_width - margin, 596)
-        self._draw_histogram_panel(draw, histogram_box, image, summary, heading_font, body_font, small_font)
+        histogram_box = (margin, 104, self.dashboard_width - margin, 592)
+        self._draw_histogram_panel(draw, histogram_box, image, summary, section_font, body_font, small_font)
 
-        card_top = 630
-        card_gap = 20
-        card_width = (self.dashboard_width - margin * 2 - card_gap * 2) // 3
-        card_height = 340
-        self._draw_luma_card(
-            canvas,
+        summary_box = (margin, 624, 812, 992)
+        self._draw_summary_panel(
             draw,
-            (margin, card_top, margin + card_width, card_top + card_height),
+            summary_box,
             summary,
-            heading_font,
+            section_font,
+            label_font,
+            value_font,
             body_font,
             small_font,
         )
+
+        card_gap = 20
+        card_left = 832
+        card_width = self.dashboard_width - margin - card_left
+        card_height = 168
         self._draw_rgb_card(
             canvas,
             draw,
-            (margin + card_width + card_gap, card_top, margin + card_width * 2 + card_gap, card_top + card_height),
+            (card_left, 624, card_left + card_width, 624 + card_height),
             summary,
-            heading_font,
+            section_font,
             body_font,
             small_font,
         )
@@ -397,13 +409,13 @@ class AdvancedImageInfoRenderer:
             canvas,
             draw,
             (
-                margin + card_width * 2 + card_gap * 2,
-                card_top,
-                self.dashboard_width - margin,
-                card_top + card_height,
+                card_left,
+                624 + card_height + card_gap,
+                card_left + card_width,
+                992,
             ),
             summary,
-            heading_font,
+            section_font,
             body_font,
             small_font,
         )
@@ -424,16 +436,16 @@ class AdvancedImageInfoRenderer:
         draw.rounded_rectangle(box, radius=18, fill="#ffffff", outline="#d5d0c7", width=2)
         draw.text((left + 20, top + 14), "Histogram", fill="#1f1f1f", font=heading_font)
         draw.text(
-            (right - 240, top + 18),
-            f"clipped black {summary.luma.clipped_black_pct:.2f}% | clipped white {summary.luma.clipped_white_pct:.2f}%",
+            (right - 300, top + 18),
+            f"shadow clip {summary.luma.clipped_black_pct:.2f}% | highlight clip {summary.luma.clipped_white_pct:.2f}%",
             fill="#555555",
             font=small_font,
         )
 
         plot_left = left + 24
-        plot_top = top + 60
+        plot_top = top + 58
         plot_right = right - 24
-        plot_bottom = bottom - 28
+        plot_bottom = bottom - 30
         draw.rectangle((plot_left, plot_top, plot_right, plot_bottom), fill="#f7f7f3", outline="#e4dfd5")
 
         histograms = _channel_histograms(image)
@@ -446,13 +458,14 @@ class AdvancedImageInfoRenderer:
             y = plot_bottom - int((plot_bottom - plot_top) * fraction)
             draw.line((plot_left, y, plot_right, y), fill="#ece6dc", width=1)
 
-        self._draw_histogram_curve(draw, histograms[0], plot_left, plot_top, plot_right, plot_bottom, max_value, "#d33c3c")
-        self._draw_histogram_curve(draw, histograms[1], plot_left, plot_top, plot_right, plot_bottom, max_value, "#3d9a49")
-        self._draw_histogram_curve(draw, histograms[2], plot_left, plot_top, plot_right, plot_bottom, max_value, "#3b6fd8")
-        self._draw_histogram_curve(draw, luma_hist, plot_left, plot_top, plot_right, plot_bottom, max_value, "#333333")
+        self._draw_histogram_curve(draw, histograms[0], plot_left, plot_top, plot_right, plot_bottom, max_value, "#d56a6a")
+        self._draw_histogram_curve(draw, histograms[1], plot_left, plot_top, plot_right, plot_bottom, max_value, "#5fae63")
+        self._draw_histogram_curve(draw, histograms[2], plot_left, plot_top, plot_right, plot_bottom, max_value, "#5b7fcb")
+        self._draw_histogram_curve(draw, luma_hist, plot_left, plot_top, plot_right, plot_bottom, max_value, "#252525", width=3)
 
         draw.text((plot_left + 4, plot_bottom + 4), "0", fill="#666666", font=small_font)
         draw.text((plot_right - 12, plot_bottom + 4), "255", fill="#666666", font=small_font)
+        draw.text((plot_left + 4, plot_top + 4), "luma + RGB overlay", fill="#7b756a", font=small_font)
 
     def _draw_histogram_curve(
         self,
@@ -464,40 +477,122 @@ class AdvancedImageInfoRenderer:
         bottom: int,
         maximum: int,
         color: str,
+        *,
+        width: int = 2,
     ) -> None:
-        width = right - left
+        plot_width = right - left
         height = bottom - top
-        if width <= 1 or height <= 1:
+        if plot_width <= 1 or height <= 1:
             return
         points: list[tuple[int, int]] = []
         for index, value in enumerate(values):
-            x = left + int((index / max(1, len(values) - 1)) * width)
+            x = left + int((index / max(1, len(values) - 1)) * plot_width)
             y = bottom - int((value / maximum) * height)
             points.append((x, y))
-        draw.line(points, fill=color, width=2)
+        draw.line(points, fill=color, width=width)
 
-    def _draw_luma_card(
+    def _draw_summary_panel(
         self,
-        canvas: Image.Image,
         draw: ImageDraw.ImageDraw,
         box: tuple[int, int, int, int],
         summary: DiagnosticSummary,
         heading_font,
+        label_font,
+        value_font,
         body_font,
         small_font,
     ) -> None:
-        self._draw_card_shell(draw, box, "Luma", heading_font)
+        self._draw_card_shell(draw, box, "Quick read", heading_font)
         left, top, right, bottom = box
-        lines = [
-            f"p01: {summary.luma.p01:.1f}",
-            f"p50: {summary.luma.p50:.1f}",
-            f"p99: {summary.luma.p99:.1f}",
-            f"clipped black: {summary.luma.clipped_black_pct:.2f}%",
-            f"clipped white: {summary.luma.clipped_white_pct:.2f}%",
+        tile_gap = 14
+        tile_top = top + 56
+        tile_height = 100
+        tile_width = (right - left - 36 - tile_gap * 2) // 3
+        tile_boxes = [
+            (left + 18, tile_top, left + 18 + tile_width, tile_top + tile_height),
+            (left + 18 + tile_width + tile_gap, tile_top, left + 18 + tile_width * 2 + tile_gap, tile_top + tile_height),
+            (left + 18 + tile_width * 2 + tile_gap * 2, tile_top, right - 18, tile_top + tile_height),
         ]
-        self._draw_key_value_block(draw, left + 18, top + 52, lines, body_font)
-        self._draw_bar(draw, (left + 18, bottom - 72, right - 18, bottom - 46), summary.luma.p50 / 255.0, "#4a6fa5")
-        draw.text((left + 18, bottom - 40), "median luma", fill="#666666", font=small_font)
+
+        self._draw_metric_tile(
+            draw,
+            tile_boxes[0],
+            "Clipping",
+            [
+                f"Shadows {summary.luma.clipped_black_pct:.2f}%",
+                f"Highlights {summary.luma.clipped_white_pct:.2f}%",
+            ],
+            label_font,
+            value_font,
+            body_font,
+        )
+        self._draw_metric_tile(
+            draw,
+            tile_boxes[1],
+            "White balance",
+            [
+                summary.rgb_balance.temperature_hint.capitalize(),
+                f"Tint {summary.rgb_balance.tint_hint}",
+            ],
+            label_font,
+            value_font,
+            body_font,
+        )
+        self._draw_metric_tile(
+            draw,
+            tile_boxes[2],
+            "Saturation",
+            [
+                f"p95 {summary.saturation.p95:.1f}%",
+                f"High-sat {summary.saturation.high_saturation_pct:.2f}%",
+            ],
+            label_font,
+            value_font,
+            body_font,
+        )
+
+        footer_top = top + 176
+        draw.line((left + 18, footer_top, right - 18, footer_top), fill="#e2dbcf", width=1)
+        draw.text(
+            (left + 18, footer_top + 12),
+            f"Luma p01 {summary.luma.p01:.1f}  p50 {summary.luma.p50:.1f}  p99 {summary.luma.p99:.1f}",
+            fill="#4b463f",
+            font=small_font,
+        )
+        draw.text(
+            (left + 18, footer_top + 36),
+            (
+                f"RGB means R {summary.rgb_balance.red_mean:.1f}  "
+                f"G {summary.rgb_balance.green_mean:.1f}  B {summary.rgb_balance.blue_mean:.1f}"
+            ),
+            fill="#4b463f",
+            font=small_font,
+        )
+        draw.text(
+            (left + 18, footer_top + 60),
+            "Use the summary for exact numbers and the histogram for pattern reading.",
+            fill="#7b756a",
+            font=small_font,
+        )
+
+    def _draw_metric_tile(
+        self,
+        draw: ImageDraw.ImageDraw,
+        box: tuple[int, int, int, int],
+        title: str,
+        lines: list[str],
+        title_font,
+        value_font,
+        body_font,
+    ) -> None:
+        left, top, right, bottom = box
+        draw.rounded_rectangle(box, radius=14, fill="#f8f6f1", outline="#e6ded1", width=2)
+        draw.text((left + 14, top + 10), title, fill="#1f1f1f", font=title_font)
+        current_y = top + 42
+        for index, line in enumerate(lines):
+            font = value_font if index == 0 else body_font
+            draw.text((left + 14, current_y), line, fill="#404040", font=font)
+            current_y += _text_line_height(font) + (4 if index == 0 else 2)
 
     def _draw_rgb_card(
         self,
@@ -511,24 +606,27 @@ class AdvancedImageInfoRenderer:
     ) -> None:
         self._draw_card_shell(draw, box, "RGB balance", heading_font)
         left, top, right, bottom = box
-        lines = [
-            f"red mean: {summary.rgb_balance.red_mean:.1f}",
-            f"green mean: {summary.rgb_balance.green_mean:.1f}",
-            f"blue mean: {summary.rgb_balance.blue_mean:.1f}",
-            f"temperature hint: {summary.rgb_balance.temperature_hint}",
-            f"tint hint: {summary.rgb_balance.tint_hint}",
-        ]
-        self._draw_key_value_block(draw, left + 18, top + 52, lines, body_font)
+        draw.text(
+            (left + 18, top + 52),
+            f"R {summary.rgb_balance.red_mean:.1f}   G {summary.rgb_balance.green_mean:.1f}   B {summary.rgb_balance.blue_mean:.1f}",
+            fill="#404040",
+            font=body_font,
+        )
+        draw.text(
+            (left + 18, top + 84),
+            f"{summary.rgb_balance.temperature_hint.capitalize()} | {summary.rgb_balance.tint_hint}",
+            fill="#404040",
+            font=body_font,
+        )
 
         max_mean = max(summary.rgb_balance.red_mean, summary.rgb_balance.green_mean, summary.rgb_balance.blue_mean, 1.0)
         bar_left = left + 18
         bar_right = right - 18
-        bar_top = bottom - 104
-        bar_height = 18
-        self._draw_bar(draw, (bar_left, bar_top, bar_right, bar_top + bar_height), summary.rgb_balance.red_mean / max_mean, "#d33c3c")
-        self._draw_bar(draw, (bar_left, bar_top + 24, bar_right, bar_top + 24 + bar_height), summary.rgb_balance.green_mean / max_mean, "#3d9a49")
-        self._draw_bar(draw, (bar_left, bar_top + 48, bar_right, bar_top + 48 + bar_height), summary.rgb_balance.blue_mean / max_mean, "#3b6fd8")
-        draw.text((bar_left, bottom - 28), "relative channel means", fill="#666666", font=small_font)
+        bar_top = bottom - 42
+        bar_height = 12
+        self._draw_bar(draw, (bar_left, bar_top, bar_right, bar_top + bar_height), summary.rgb_balance.red_mean / max_mean, "#d56a6a")
+        self._draw_bar(draw, (bar_left, bar_top + 16, bar_right, bar_top + 16 + bar_height), summary.rgb_balance.green_mean / max_mean, "#5fae63")
+        self._draw_bar(draw, (bar_left, bar_top + 32, bar_right, bar_top + 32 + bar_height), summary.rgb_balance.blue_mean / max_mean, "#5b7fcb")
 
     def _draw_saturation_card(
         self,
@@ -542,14 +640,9 @@ class AdvancedImageInfoRenderer:
     ) -> None:
         self._draw_card_shell(draw, box, "Saturation", heading_font)
         left, top, right, bottom = box
-        lines = [
-            f"p50: {summary.saturation.p50:.1f}%",
-            f"p95: {summary.saturation.p95:.1f}%",
-            f"high saturation: {summary.saturation.high_saturation_pct:.2f}%",
-        ]
-        self._draw_key_value_block(draw, left + 18, top + 52, lines, body_font)
-        self._draw_bar(draw, (left + 18, bottom - 72, right - 18, bottom - 46), summary.saturation.p95 / 100.0, "#a3682b")
-        draw.text((left + 18, bottom - 40), "saturation percentile range", fill="#666666", font=small_font)
+        draw.text((left + 18, top + 54), f"p50 {summary.saturation.p50:.1f}%", fill="#404040", font=body_font)
+        draw.text((left + 18, top + 84), f"p95 {summary.saturation.p95:.1f}%", fill="#404040", font=body_font)
+        self._draw_bar(draw, (left + 18, bottom - 34, right - 18, bottom - 12), summary.saturation.p95 / 100.0, "#a3682b")
 
     def _draw_card_shell(
         self,
