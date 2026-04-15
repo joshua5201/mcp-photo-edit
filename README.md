@@ -32,7 +32,7 @@ This example compares [advanced image info](#advanced-image-info)-assisted runs 
 
 Main comparison:
 
-| Baseline | Gemini 3 Flash | Gemini 3.1 Pro | GPT-5.4 Medium | GPT-5.4 Mini |
+| Baseline | Gemini 3 Flash | Gemini 3.1 Pro | GPT-5.4 (Medium) | GPT-5.4 Mini (Medium) |
 | :--- | :--- | :--- | :--- | :--- |
 | <a href="demo/cosplay.jpg"><img src="demo/cosplay.jpg" alt="Baseline" width="240"></a> | <a href="demo/ccd_style_flash.jpg"><img src="demo/ccd_style_flash.jpg" alt="CCD style by Gemini 3 Flash" width="240"></a> | <a href="demo/ccd_style_pro.jpg"><img src="demo/ccd_style_pro.jpg" alt="CCD style by Gemini 3.1 Pro" width="240"></a> | <a href="demo/ccd_style_gpt54_medium.jpg"><img src="demo/ccd_style_gpt54_medium.jpg" alt="CCD style by GPT-5.4 Medium" width="240"></a> | <a href="demo/ccd_style_gpt54_mini_medium.jpg"><img src="demo/ccd_style_gpt54_mini_medium.jpg" alt="CCD style by GPT-5.4 Mini" width="240"></a> |
 
