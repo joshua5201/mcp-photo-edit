@@ -28,7 +28,7 @@ Compare the baseline image with the two Fujifilm-style outputs below. Each thumb
 This example compares [advanced image info](#advanced-image-info)-assisted runs using the same source image, prompt but different models.
 
 **Prompt:**
-> Apply a 200s CCD camera like profile to `demo/cosplay.NEF`. Apply a crop to focus on the center but keep the aspect ratio, export the result as [demo/ccd_style_gpt54_mini_medium.jpg](demo/ccd_style_gpt54_mini_medium.jpg)
+> Apply a 2000s CCD camera like profile to `demo/cosplay.NEF`. Apply a crop to focus on the center but keep the aspect ratio, export the result as [demo/ccd_style_gpt54_mini_medium.jpg](demo/ccd_style_gpt54_mini_medium.jpg)
 
 Main comparison:
 
