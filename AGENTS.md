@@ -24,16 +24,29 @@ This file is a fast handoff for future work on `mcp-photo-edit`.
 3. `apply_adjustments`
 4. `render_preview`
 5. `reset_adjustments`
-6. `export_image`
-7. `list_supported_adjustments`
+6. `undo_adjustment`
+7. `redo_adjustment`
+8. `export_image`
+9. `list_supported_adjustments`
 
-Sessions are stateful and workspace-backed. The public API is adjustment-based, not sidecar-based. Preview renders are preserved as numbered artifacts, and the latest preview is also returned as `preview_path` with a `preview_count`.
+Sessions are stateful and workspace-backed. The public API is adjustment-based, not sidecar-based. Preview renders are preserved as numbered artifacts, and session-bearing responses return the latest `preview_path` plus `preview_history`. `render_preview` also returns an explicit `preview_count`.
 
 ## Current Adjustment Set
 
 - `exposure`
 - `contrast`
 - `saturation`
+- `rgb_mixer`
+- `denoise_luma`
+- `denoise_detail`
+- `denoise_chroma`
+- `color_temperature`
+- `green_balance`
+- `highlights`
+- `shadows`
+- `sharpen_amount`
+- `sharpen_radius`
+- `sharpen_contrast`
 - `orientation`
 - `crop`
 
@@ -75,19 +88,19 @@ These fallbacks are compatibility-only. Avoid introducing new docs or features a
 Install dev dependencies:
 
 ```bash
-python3 -m pip install -e .[dev]
+uv sync --extra dev
 ```
 
 Run tests:
 
 ```bash
-PYTHONPATH=./.pip-deps:./src python3 -m pytest
+uv run pytest
 ```
 
 Compile check:
 
 ```bash
-python3 -m compileall src
+uv run python -m compileall src
 ```
 
 ## Documentation Rules

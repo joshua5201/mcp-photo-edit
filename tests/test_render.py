@@ -3,8 +3,11 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
+import pytest
+from PIL import Image, ImageDraw
+
 from mcp_photo_edit.models import AdjustmentState, CropAdjustment, RGBMixer, SourceImageInfo
-from mcp_photo_edit.render import RawTherapeeBackend
+from mcp_photo_edit.render import AdvancedImageInfoRenderer, RawTherapeeBackend
 
 
 def test_rawtherapee_render_invokes_cli_with_pp3(monkeypatch, tmp_path: Path) -> None:
@@ -38,6 +41,56 @@ def test_rawtherapee_render_invokes_cli_with_pp3(monkeypatch, tmp_path: Path) ->
     assert "-p" in commands[0]
     assert str(profile) in commands[0]
     assert any(part.startswith("-j") for part in commands[0])
+
+
+def test_rawtherapee_render_preview_fails_when_backend_produces_no_file(
+    monkeypatch, tmp_path: Path
+) -> None:
+    def fake_which(name: str) -> str:
+        assert name == "rawtherapee-cli"
+        return "/usr/bin/rawtherapee-cli"
+
+    def fake_run(command: list[str], check: bool, capture_output: bool, text: bool):
+        return subprocess.CompletedProcess(command, 0, stdout="", stderr="")
+
+    monkeypatch.setattr("mcp_photo_edit.render.shutil.which", fake_which)
+    monkeypatch.setattr("mcp_photo_edit.render.subprocess.run", fake_run)
+
+    source = tmp_path / "source.nef"
+    profile = tmp_path / "session.pp3"
+    target = tmp_path / "preview.jpg"
+    source.write_text("raw", encoding="utf-8")
+    profile.write_text("[Exposure]\nCompensation=0\n", encoding="utf-8")
+
+    backend = RawTherapeeBackend()
+
+    with pytest.raises(Exception, match="without producing"):
+        backend.render_preview(source, profile, target, max_size=None)
+
+
+def test_rawtherapee_render_export_fails_when_backend_produces_no_file(
+    monkeypatch, tmp_path: Path
+) -> None:
+    def fake_which(name: str) -> str:
+        assert name == "rawtherapee-cli"
+        return "/usr/bin/rawtherapee-cli"
+
+    def fake_run(command: list[str], check: bool, capture_output: bool, text: bool):
+        return subprocess.CompletedProcess(command, 0, stdout="", stderr="")
+
+    monkeypatch.setattr("mcp_photo_edit.render.shutil.which", fake_which)
+    monkeypatch.setattr("mcp_photo_edit.render.subprocess.run", fake_run)
+
+    source = tmp_path / "source.nef"
+    profile = tmp_path / "session.pp3"
+    target = tmp_path / "export.jpg"
+    source.write_text("raw", encoding="utf-8")
+    profile.write_text("[Exposure]\nCompensation=0\n", encoding="utf-8")
+
+    backend = RawTherapeeBackend()
+
+    with pytest.raises(Exception, match="without producing"):
+        backend.render_export(source, profile, target)
 
 
 def test_rawtherapee_rejects_unsupported_geometry_adjustments(tmp_path: Path) -> None:
@@ -137,3 +190,27 @@ def test_rawtherapee_write_state_file_includes_new_adjustment_blocks(tmp_path: P
     assert "[White Balance]" in pp3
     assert "[Shadows & Highlights]" in pp3
     assert "[Sharpening]" in pp3
+
+
+def test_advanced_image_info_dashboard_uses_clear_panel_hierarchy(tmp_path: Path) -> None:
+    preview = tmp_path / "preview.png"
+    image = Image.new("RGB", (800, 600), "#6c6f78")
+    draw = ImageDraw.Draw(image)
+    draw.rectangle((0, 0, 400, 300), fill="#c24848")
+    draw.rectangle((400, 0, 800, 300), fill="#4880c2")
+    draw.rectangle((0, 300, 400, 600), fill="#4ea362")
+    draw.rectangle((400, 300, 800, 600), fill="#d1b14e")
+    image.save(preview)
+
+    dashboard = tmp_path / "dashboard.png"
+    summary = AdvancedImageInfoRenderer().render(preview, dashboard)
+
+    assert dashboard.exists()
+    assert summary.analysis_source == "current_rendered_state"
+
+    with Image.open(dashboard) as rendered:
+        assert rendered.size == (1280, 1024)
+        assert rendered.getpixel((60, 610)) == (245, 242, 235)
+        assert rendered.getpixel((64, 640)) != (245, 242, 235)
+        assert rendered.getpixel((864, 640)) != (245, 242, 235)
+        assert rendered.getpixel((864, 850)) != (245, 242, 235)

@@ -1,0 +1,201 @@
+{
+  "session_id": "f818791c9133",
+  "session_label": null,
+  "source": {
+    "input_path": "[REDACTED]",
+    "file_name": "cosplay.NEF",
+    "suffix": ".nef",
+    "width": 4032,
+    "height": 6056
+  },
+  "workspace_dir": "[REDACTED]",
+  "state_path": "[REDACTED]",
+  "xmp_path": null,
+  "preview_path": "[REDACTED]",
+  "diagnostic_dashboard_path": "[REDACTED]",
+  "diagnostic_summary": {
+    "analysis_source": "current_rendered_state",
+    "dimensions": {
+      "width": 682,
+      "height": 1024
+    },
+    "luma": {
+      "p01": 14.0,
+      "p50": 48.0,
+      "p99": 240.0,
+      "clipped_black_pct": 0.0027206286656891493,
+      "clipped_white_pct": 0.09006712793255131
+    },
+    "rgb_balance": {
+      "red_mean": 75.08536330416055,
+      "green_mean": 69.03258883568549,
+      "blue_mean": 81.74678393053519,
+      "temperature_hint": "neutral",
+      "tint_hint": "magenta"
+    },
+    "saturation": {
+      "p50": 27.0,
+      "p95": 59.0,
+      "high_saturation_pct": 2.1839488636363638
+    }
+  },
+  "preview_max_size": 1024,
+  "preview_history": [
+    {
+      "sequence": 1,
+      "path": "[REDACTED]",
+      "rendered_at": "2026-04-15T15:25:04.703746Z"
+    },
+    {
+      "sequence": 2,
+      "path": "[REDACTED]",
+      "rendered_at": "2026-04-15T15:25:45.679746Z"
+    }
+  ],
+  "adjustments": {
+    "exposure": 0.2,
+    "contrast": 30.0,
+    "saturation": 25.0,
+    "rgb_mixer": null,
+    "denoise_luma": 0.0,
+    "denoise_detail": 0.0,
+    "denoise_chroma": 0.0,
+    "color_temperature": 5200.0,
+    "green_balance": 1.0,
+    "highlights": 0.0,
+    "shadows": 0.0,
+    "sharpen_amount": 200,
+    "sharpen_radius": 0.8,
+    "sharpen_contrast": 30.0,
+    "orientation": 0,
+    "crop": {
+      "left": 0.1,
+      "top": 0.1,
+      "right": 0.9,
+      "bottom": 0.9
+    }
+  },
+  "history": [
+    {
+      "step_id": "0001",
+      "kind": "init",
+      "created_at": "2026-04-15T15:25:03.217210Z",
+      "adjustments": {
+        "exposure": 0.0,
+        "contrast": 0.0,
+        "saturation": 0.0,
+        "rgb_mixer": null,
+        "denoise_luma": 0.0,
+        "denoise_detail": 0.0,
+        "denoise_chroma": 0.0,
+        "color_temperature": null,
+        "green_balance": null,
+        "highlights": 0.0,
+        "shadows": 0.0,
+        "sharpen_amount": 0,
+        "sharpen_radius": 0.5,
+        "sharpen_contrast": 20.0,
+        "orientation": 0,
+        "crop": null
+      },
+      "state_path": "[REDACTED]",
+      "preview_path": "[REDACTED]",
+      "preview_sequence": 1,
+      "diagnostic_dashboard_path": "[REDACTED]",
+      "diagnostic_summary": {
+        "analysis_source": "current_rendered_state",
+        "dimensions": {
+          "width": 682,
+          "height": 1024
+        },
+        "luma": {
+          "p01": 18.0,
+          "p50": 65.0,
+          "p99": 253.0,
+          "clipped_black_pct": 0.0,
+          "clipped_white_pct": 0.14347736436950148
+        },
+        "rgb_balance": {
+          "red_mean": 80.16491448634531,
+          "green_mean": 78.25279508797654,
+          "blue_mean": 74.60172144199046,
+          "temperature_hint": "neutral",
+          "tint_hint": "neutral"
+        },
+        "saturation": {
+          "p50": 13.0,
+          "p95": 34.0,
+          "high_saturation_pct": 0.0030070106304985337
+        }
+      },
+      "description": null
+    },
+    {
+      "step_id": "0002",
+      "kind": "apply_adjustments",
+      "created_at": "2026-04-15T15:25:44.356332Z",
+      "adjustments": {
+        "exposure": 0.2,
+        "contrast": 30.0,
+        "saturation": 25.0,
+        "rgb_mixer": null,
+        "denoise_luma": 0.0,
+        "denoise_detail": 0.0,
+        "denoise_chroma": 0.0,
+        "color_temperature": 5200.0,
+        "green_balance": 1.0,
+        "highlights": 0.0,
+        "shadows": 0.0,
+        "sharpen_amount": 200,
+        "sharpen_radius": 0.8,
+        "sharpen_contrast": 30.0,
+        "orientation": 0,
+        "crop": {
+          "left": 0.1,
+          "top": 0.1,
+          "right": 0.9,
+          "bottom": 0.9
+        }
+      },
+      "state_path": "[REDACTED]",
+      "preview_path": "[REDACTED]",
+      "preview_sequence": 2,
+      "diagnostic_dashboard_path": "[REDACTED]",
+      "diagnostic_summary": {
+        "analysis_source": "current_rendered_state",
+        "dimensions": {
+          "width": 682,
+          "height": 1024
+        },
+        "luma": {
+          "p01": 14.0,
+          "p50": 48.0,
+          "p99": 240.0,
+          "clipped_black_pct": 0.0027206286656891493,
+          "clipped_white_pct": 0.09006712793255131
+        },
+        "rgb_balance": {
+          "red_mean": 75.08536330416055,
+          "green_mean": 69.03258883568549,
+          "blue_mean": 81.74678393053519,
+          "temperature_hint": "neutral",
+          "tint_hint": "magenta"
+        },
+        "saturation": {
+          "p50": 27.0,
+          "p95": 59.0,
+          "high_saturation_pct": 2.1839488636363638
+        }
+      },
+      "description": null
+    }
+  ],
+  "history_index": 1,
+  "created_at": "2026-04-15T15:25:03.232978Z",
+  "updated_at": "2026-04-15T15:25:54.277093Z",
+  "last_rendered_at": "2026-04-15T15:25:54.277100Z",
+  "backend": "rawtherapee-cli",
+  "can_undo": true,
+  "can_redo": false,
+  "history_length": 2
+}

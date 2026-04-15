@@ -75,6 +75,8 @@ def create_server() -> FastMCP:
             return PreviewResult(
                 session_id=session.session_id,
                 preview_path=session.preview_path,
+                diagnostic_dashboard_path=session.diagnostic_dashboard_path,
+                diagnostic_summary=session.diagnostic_summary,
                 preview_count=len(session.preview_history),
                 preview_history=session.preview_history,
                 history_index=session.history_index,

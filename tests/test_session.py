@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 import pytest
+from PIL import Image, ImageDraw
 
 from mcp_photo_edit.errors import ValidationError
 from mcp_photo_edit.models import AdjustmentPatch, SourceImageInfo
@@ -37,14 +38,24 @@ class DummyBackend:
     ) -> tuple[int, int]:
         self.preview_calls.append((source_path, state_path, target_path, max_size))
         target_path.parent.mkdir(parents=True, exist_ok=True)
-        target_path.write_bytes(b"preview")
+        self._write_test_image(target_path, self.preview_size)
         return self.preview_size
 
     def render_export(self, source_path: Path, state_path: Path, target_path: Path) -> tuple[int, int]:
         self.export_calls.append((source_path, state_path, target_path))
         target_path.parent.mkdir(parents=True, exist_ok=True)
-        target_path.write_bytes(b"export")
+        self._write_test_image(target_path, (800, 600))
         return (800, 600)
+
+    def _write_test_image(self, target_path: Path, size: tuple[int, int]) -> None:
+        image = Image.new("RGB", size, "#0f172a")
+        draw = ImageDraw.Draw(image)
+        width, height = size
+        draw.rectangle((0, 0, width // 2, height // 2), fill="#d14a4a")
+        draw.rectangle((width // 2, 0, width, height // 2), fill="#4b7bd1")
+        draw.rectangle((0, height // 2, width // 2, height), fill="#47a35d")
+        draw.rectangle((width // 2, height // 2, width, height), fill="#f1c84c")
+        image.save(target_path, quality=90)
 
 
 def test_create_session_persists_initial_history_state_and_preview(tmp_path: Path) -> None:
@@ -69,6 +80,15 @@ def test_create_session_persists_initial_history_state_and_preview(tmp_path: Pat
     assert session.source.height == 600
     assert backend.preview_calls[0][1] == current_state
     assert backend.preview_calls[0][3] == 512
+    assert session.diagnostic_dashboard_path is not None
+    assert session.diagnostic_dashboard_path != session.preview_path
+    assert Path(session.diagnostic_dashboard_path).exists()
+    assert session.diagnostic_summary is not None
+    assert session.diagnostic_summary.analysis_source == "current_rendered_state"
+    assert session.diagnostic_summary.dimensions.width == 800
+    assert session.diagnostic_summary.dimensions.height == 600
+    assert session.history[0].diagnostic_dashboard_path == session.diagnostic_dashboard_path
+    assert session.history[0].diagnostic_summary == session.diagnostic_summary
     assert len(session.preview_history) == 1
     assert len(session.history) == 1
     assert session.history_index == 0
@@ -105,6 +125,10 @@ def test_apply_and_reset_adjustments_append_semantic_history(tmp_path: Path) -> 
     assert updated.can_redo is False
     assert updated.history[-1].kind == "apply_adjustments"
     assert updated.history[-1].preview_sequence == 2
+    assert updated.diagnostic_dashboard_path is not None
+    assert updated.history[-1].diagnostic_dashboard_path == updated.diagnostic_dashboard_path
+    assert updated.history[-1].diagnostic_summary == updated.diagnostic_summary
+    assert reloaded.diagnostic_summary is not None
 
     reset = manager.reset_adjustments(
         session.session_id,
@@ -117,6 +141,8 @@ def test_apply_and_reset_adjustments_append_semantic_history(tmp_path: Path) -> 
     assert reset.history_index == 2
     assert reset.history[-1].kind == "reset_adjustments"
     assert reset.history[-1].preview_path is None
+    assert reset.diagnostic_dashboard_path is None
+    assert reset.diagnostic_summary is None
     assert reset.preview_path == updated.preview_path
 
 
@@ -164,6 +190,64 @@ def test_render_preview_appends_preview_history_without_semantic_history(tmp_pat
     assert [artifact.sequence for artifact in session.preview_history] == [1, 2]
     assert session.history[0].preview_sequence == 2
     assert session.history[0].preview_path == str(second_preview)
+    assert session.diagnostic_dashboard_path is not None
+    assert Path(session.diagnostic_dashboard_path).name == "dashboard-0002.png"
+    assert Path(session.diagnostic_dashboard_path).exists()
+    assert session.diagnostic_dashboard_path != session.preview_path
+    assert session.history[0].diagnostic_dashboard_path == session.diagnostic_dashboard_path
+
+
+def test_disabled_advanced_image_info_keeps_preview_flow_and_null_fields(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source = tmp_path / "source.ppm"
+    source.write_text("P3\n1 1\n255\n255 0 0\n", encoding="utf-8")
+    backend = DummyBackend()
+    monkeypatch.setenv("DISABLE_ADVANCED_IMAGE_INFO", "true")
+    manager = SessionManager(workspace_root=tmp_path / "workspace", backend=backend)
+
+    assert manager.advanced_image_info_enabled is False
+
+    session = manager.create_session(str(source))
+    first_preview = Path(session.preview_path)
+    assert first_preview.exists()
+    assert session.diagnostic_dashboard_path is None
+    assert session.diagnostic_summary is None
+
+    session = manager.render_preview(session.session_id)
+    second_preview = Path(session.preview_path)
+
+    assert second_preview.name == "preview-0002.jpg"
+    assert second_preview.exists()
+    assert len(session.preview_history) == 2
+    assert session.diagnostic_dashboard_path is None
+    assert session.diagnostic_summary is None
+    assert session.history[0].diagnostic_dashboard_path is None
+    assert session.history[0].diagnostic_summary is None
+
+
+def test_advanced_image_info_fail_open_preserves_preview(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source = tmp_path / "source.ppm"
+    source.write_text("P3\n1 1\n255\n255 0 0\n", encoding="utf-8")
+    backend = DummyBackend()
+    manager = SessionManager(workspace_root=tmp_path / "workspace", backend=backend)
+
+    def fail_render(*args, **kwargs):  # noqa: ANN001, ANN002
+        raise RuntimeError("diagnostics failed")
+
+    monkeypatch.setattr(manager._advanced_image_info_renderer, "render", fail_render)
+
+    session = manager.create_session(str(source))
+
+    assert Path(session.preview_path).exists()
+    assert session.diagnostic_dashboard_path is None
+    assert session.diagnostic_summary is None
+    assert session.history[0].diagnostic_dashboard_path is None
+    assert session.history[0].diagnostic_summary is None
 
 
 def test_undo_and_redo_move_cursor_without_creating_new_steps(tmp_path: Path) -> None:
@@ -184,6 +268,8 @@ def test_undo_and_redo_move_cursor_without_creating_new_steps(tmp_path: Path) ->
     assert len(undone.history) == 3
     assert len(undone.preview_history) == preview_count
     assert undone.preview_path == undone.history[1].preview_path
+    assert undone.diagnostic_dashboard_path == undone.history[1].diagnostic_dashboard_path
+    assert undone.diagnostic_summary == undone.history[1].diagnostic_summary
     assert undone.can_undo is True
     assert undone.can_redo is True
 
@@ -194,6 +280,8 @@ def test_undo_and_redo_move_cursor_without_creating_new_steps(tmp_path: Path) ->
     assert len(redone.history) == 3
     assert len(redone.preview_history) == preview_count
     assert redone.preview_path == redone.history[2].preview_path
+    assert redone.diagnostic_dashboard_path == redone.history[2].diagnostic_dashboard_path
+    assert redone.diagnostic_summary == redone.history[2].diagnostic_summary
 
 
 def test_apply_after_undo_truncates_redo_tail(tmp_path: Path) -> None:

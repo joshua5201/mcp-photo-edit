@@ -6,35 +6,59 @@ The server exposes a session-based editing workflow instead of raw sidecar manip
 
 Each session now also maintains an explicit undo / redo timeline in `session.json`. Semantic edit history is tracked separately from preview-render history.
 
-## Examples 
+## Advanced Image Info
+
+This project can attach extra diagnostic output to each preview render:
+
+- `preview_path` remains the primary image for aesthetic judgment.
+- `diagnostic_dashboard_path` adds a separate technical dashboard image.
+- `diagnostic_summary` adds machine-readable stats for exposure, balance, and saturation.
+- Set `DISABLE_ADVANCED_IMAGE_INFO=true` to turn the diagnostics off and keep the original preview-first workflow.
+
+When enabled, the dashboard is meant to complement the clean preview rather than replace it.
+
+## Examples
 
 Check the [demo/](demo/) directory for full session details, including `session.json`, `PP3` sidecars, and intermediate previews in the `workspace/` folder.
 
-### Example: Hong Kong Vibrant Vibe (v0.1.0)
+The demo photographs are original work and are not covered by the GPL license. Commercial use is prohibited.
 
-This example demonstrates an agent-driven edit to achieve a "Hong Kong vibrant" look using Gemini 3 Flash.
-
-**Prompt:**
-> Adjust `demo/hk.jpg` to be more colorful, more Hong Kong vibrant, lively vibe. Crop / rotate the photo if you want. Export to `demo/hk_modified.jpg`
-
-| 1. Before | 2. After |
-| :--- | :--- |
-| ![Before](demo/hk.jpg) | ![After](demo/hk_modified.jpg) |
-
-**Model:** Gemini 3 Flash
-
-### Example: Japanese Film Style (v0.1.0)
+### Example: Fujifilm Style (v0.2.0)
 
 **Prompt:**
-> Apply a bright, airy Japanese film like profile to demo/japanese_film_style.NEF. Finally, apply a crop to focus on the center and export the result as japanese_film_style_modified.jpg
+> Apply a Fujifilm camera like profile to `demo/cosplay.NEF`. Apply a crop to focus on the center but keep the aspect ratio, export the result as `demo/fujifilm_style.jpg`
 
-| 1. Before | 2. After |
-| :--- | :--- |
-| ![Before](demo/japanese_film_style.jpg) | ![After](demo/japanese_film_style_modified.jpg) |
+Compare the baseline image with the two Fujifilm-style outputs below. Each thumbnail links to the full-size file.
 
-Note: The original NEF file is not included in the repository. The "Before" image is a JPEG exported from Darktable without modifications. This photograph is original work and is not subject to the GPL license; commercial use is prohibited.
+| Before | Advanced image info disabled | Advanced image info enabled |
+| :--- | :--- | :--- |
+| <a href="demo/cosplay.jpg"><img src="demo/cosplay.jpg" alt="Before" width="240"></a> | <a href="demo/fujifilm_style_pro.jpg"><img src="demo/fujifilm_style_pro.jpg" alt="After with advanced image info disabled" width="240"></a> | <a href="demo/fujifilm_style_advanced_info_pro.jpg"><img src="demo/fujifilm_style_advanced_info_pro.jpg" alt="After with advanced image info enabled" width="240"></a> |
 
-**Model:** Gemini 3 Flash
+**Model:** gemini-3.1-pro-preview
+
+### Example: CCD Style (v0.2.0)
+
+This example compares advanced image info-assisted runs using the same source image and prompt style.
+The main table shows the matching-aspect-ratio outputs; the GPT-5.4 Mini result is shown separately because it did not follow the requested crop.
+
+**Prompt:**
+> Apply a 200s CCD camera like profile to `demo/cosplay.NEF`. Apply a crop to focus on the center but keep the aspect ratio, export the result as `demo/ccd_style.jpg`
+
+Main comparison:
+
+| Baseline | Gemini 3 Flash | Gemini 3.1 Pro | GPT-5.4 Medium |
+| :--- | :--- | :--- | :--- |
+| <a href="demo/cosplay.jpg"><img src="demo/cosplay.jpg" alt="Baseline" width="240"></a> | <a href="demo/ccd_style_advanced_info_flash.jpg"><img src="demo/ccd_style_advanced_info_flash.jpg" alt="CCD style by Gemini 3 Flash" width="240"></a> | <a href="demo/ccd_style_advanced_info_pro.jpg"><img src="demo/ccd_style_advanced_info_pro.jpg" alt="CCD style by Gemini 3.1 Pro" width="240"></a> | <a href="demo/ccd_style_advanced_info_gpt54_medium.jpg"><img src="demo/ccd_style_advanced_info_gpt54_medium.jpg" alt="CCD style by GPT-5.4 Medium" width="240"></a> |
+
+**Models:** gemini-3-flash-preview, gemini-3.1-pro-preview, gpt-5.4-medium
+
+Mini outlier:
+
+| GPT-5.4 Mini |
+| :--- |
+| <a href="demo/ccd_style_gpt54_mini_medium.jpg"><img src="demo/ccd_style_gpt54_mini_medium.jpg" alt="CCD style by GPT-5.4 Mini" width="240"></a> |
+
+The GPT-5.4 Mini example is separate because the run did not follow the requested crop and ended up with a different aspect ratio.
 
 ## Status
 
@@ -54,6 +78,8 @@ Not in scope:
 - full photo-editor feature coverage
 - large preset libraries
 - batch editing UX
+
+For a repeatable enabled-vs-disabled review of advanced image info, see [plans/milestone-5-outcome-review.md](plans/milestone-5-outcome-review.md).
 
 ## Requirements
 
@@ -230,10 +256,10 @@ RAW support depends on the local RawTherapee build and its bundled RAW decoders.
 ## Typical Agent Workflow
 
 1. Create a session from an input image.
-2. Inspect the returned preview image, `preview_count`, current adjustment state, and history cursor fields such as `history_index`, `history_length`, `can_undo`, and `can_redo`.
+2. Inspect the returned session state, including `preview_path`, `preview_history`, current adjustment state, and history cursor fields such as `history_index`, `history_length`, `can_undo`, and `can_redo`.
 3. Apply one or more adjustments.
 4. Use `undo_adjustment` or `redo_adjustment` when you need to move across committed edit steps.
-5. Re-check the preview by calling `render_preview` whenever you want a fresh preview artifact for the current step.
+5. Re-check the preview by calling `render_preview` whenever you want a fresh preview artifact and an explicit `preview_count` for the current step.
 6. Export a final image explicitly.
 
 See [SKILL.md](skills/mcp-photo-edit/SKILL.md) for an agent-facing usage guide.
@@ -287,7 +313,7 @@ src/mcp_photo_edit/
   render.py        Backend integrations
   server.py        MCP tool registration
 tests/
-docs/
+skills/
 ```
 
 ## Development
@@ -301,7 +327,7 @@ uv sync --extra dev
 Run tests:
 
 ```bash
-pytest
+uv run pytest
 ```
 
 Start the server over stdio:

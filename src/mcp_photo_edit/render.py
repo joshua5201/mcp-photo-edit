@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import shutil
 import subprocess
 import tempfile
@@ -9,12 +10,22 @@ from pathlib import Path
 from typing import Protocol
 
 from .errors import BackendUnavailableError, RenderFailedError, ValidationError
-from .models import AdjustmentState, SourceImageInfo
+from .models import (
+    AdjustmentState,
+    DiagnosticDimensions,
+    DiagnosticLumaSummary,
+    DiagnosticRGBBalanceSummary,
+    DiagnosticSaturationSummary,
+    DiagnosticSummary,
+    SourceImageInfo,
+)
 from .pp3 import build_pp3
 try:
-    from PIL import Image
+    from PIL import Image, ImageDraw, ImageFont
 except ImportError:  # pragma: no cover - optional at import time, required at runtime for resizing
     Image = None
+    ImageDraw = None
+    ImageFont = None
 
 
 class RenderBackend(Protocol):
@@ -131,12 +142,14 @@ class RawTherapeeBackend:
                 quality=self.preview_quality,
             )
             self._run(command)
+            self._require_output(temp_output)
             rendered_size = _image_dimensions(temp_output)
 
             if max_size is not None:
                 self._resize_preview(temp_output, target_path, max_size=max_size)
             else:
                 temp_output.replace(target_path)
+            self._require_output(target_path)
             return rendered_size
 
     def render_export(
@@ -155,6 +168,7 @@ class RawTherapeeBackend:
             quality=self.export_quality,
         )
         self._run(command)
+        self._require_output(target_path)
         return _image_dimensions(target_path)
 
     def _validate_adjustments(self, adjustments: AdjustmentState, source: SourceImageInfo) -> None:
@@ -214,6 +228,14 @@ class RawTherapeeBackend:
                 hint=_render_details(completed.stdout, completed.stderr),
             )
 
+    def _require_output(self, target_path: Path) -> None:
+        if target_path.exists():
+            return
+        raise RenderFailedError(
+            f"{self.executable} completed without producing '{target_path.name}'.",
+            hint="Inspect backend output and verify the source file, PP3 profile, and output format.",
+        )
+
     def _resize_preview(self, source_path: Path, target_path: Path, *, max_size: int) -> None:
         if Image is None:
             source_path.replace(target_path)
@@ -227,6 +249,533 @@ class RawTherapeeBackend:
                 quality=self.preview_quality,
                 optimize=True,
             )
+
+
+class AdvancedImageInfoRenderer:
+    """Generate a truthful dashboard and summary from a preview raster."""
+
+    def __init__(
+        self,
+        *,
+        dashboard_size: tuple[int, int] = (1280, 1024),
+    ) -> None:
+        self.dashboard_width, self.dashboard_height = dashboard_size
+
+    def render(self, preview_path: Path, dashboard_path: Path) -> DiagnosticSummary:
+        if Image is None or ImageDraw is None or ImageFont is None:
+            raise RenderFailedError(
+                "Pillow is required to generate advanced image info.",
+                hint="Install the Pillow dependency to enable the diagnostic dashboard.",
+            )
+
+        with Image.open(preview_path) as preview_image:
+            rgb_image = preview_image.convert("RGB")
+            summary = self._summarize(rgb_image)
+            dashboard_path = dashboard_path.resolve()
+            dashboard_path.parent.mkdir(parents=True, exist_ok=True)
+            temp_path = dashboard_path.with_name(f".{dashboard_path.name}.tmp")
+            self._draw_dashboard(rgb_image, summary, temp_path)
+            temp_path.replace(dashboard_path)
+            return summary
+
+    def _summarize(self, image: Image.Image) -> DiagnosticSummary:
+        width, height = image.size
+        pixels = image.getdata()
+        pixel_count = width * height
+        if pixel_count <= 0:
+            raise RenderFailedError("The preview image is empty.")
+
+        red_hist = [0] * 256
+        green_hist = [0] * 256
+        blue_hist = [0] * 256
+        luma_hist = [0] * 256
+        saturation_hist = [0] * 101
+        red_sum = 0.0
+        green_sum = 0.0
+        blue_sum = 0.0
+
+        for red, green, blue in pixels:
+            red_hist[red] += 1
+            green_hist[green] += 1
+            blue_hist[blue] += 1
+            red_sum += red
+            green_sum += green
+            blue_sum += blue
+
+            luma = 0.2126 * red + 0.7152 * green + 0.0722 * blue
+            luma_hist[min(255, max(0, int(round(luma))))] += 1
+
+            saturation = _rgb_saturation(red, green, blue)
+            saturation_hist[min(100, max(0, int(round(saturation * 100.0))))] += 1
+
+        luma_stats = _histogram_percentiles(luma_hist, [1.0, 50.0, 99.0])
+        saturation_stats = _histogram_percentiles(saturation_hist, [50.0, 95.0])
+        clipped_black_pct = _histogram_tail_pct(luma_hist, upper_bound=1)
+        clipped_white_pct = _histogram_tail_pct(luma_hist, lower_bound=254)
+
+        red_mean = red_sum / pixel_count
+        green_mean = green_sum / pixel_count
+        blue_mean = blue_sum / pixel_count
+
+        temperature_hint = _temperature_hint(red_mean, blue_mean)
+        tint_hint = _tint_hint(red_mean, green_mean, blue_mean)
+
+        high_saturation_pct = _histogram_tail_pct(saturation_hist, lower_bound=75)
+
+        return DiagnosticSummary(
+            dimensions=DiagnosticDimensions(width=width, height=height),
+            luma=DiagnosticLumaSummary(
+                p01=luma_stats[1.0],
+                p50=luma_stats[50.0],
+                p99=luma_stats[99.0],
+                clipped_black_pct=clipped_black_pct,
+                clipped_white_pct=clipped_white_pct,
+            ),
+            rgb_balance=DiagnosticRGBBalanceSummary(
+                red_mean=red_mean,
+                green_mean=green_mean,
+                blue_mean=blue_mean,
+                temperature_hint=temperature_hint,
+                tint_hint=tint_hint,
+            ),
+            saturation=DiagnosticSaturationSummary(
+                p50=saturation_stats[50.0],
+                p95=saturation_stats[95.0],
+                high_saturation_pct=high_saturation_pct,
+            ),
+        )
+
+    def _draw_dashboard(self, image: Image.Image, summary: DiagnosticSummary, output_path: Path) -> None:
+        canvas = Image.new("RGB", (self.dashboard_width, self.dashboard_height), "#f5f2eb")
+        draw = ImageDraw.Draw(canvas)
+        title_font = self._font(30)
+        header_font = self._font(18)
+        section_font = self._font(22)
+        body_font = self._font(16)
+        small_font = self._font(13)
+        label_font = self._font(19)
+        value_font = self._font(24)
+
+        margin = 32
+        draw.text((margin, 18), "Advanced Image Info", fill="#1a1a1a", font=title_font)
+        draw.text(
+            (margin, 58),
+            "Preview analysis for the current rendered state",
+            fill="#555555",
+            font=body_font,
+        )
+        draw.text(
+            (self.dashboard_width - 372, 48),
+            f"{summary.dimensions.width} x {summary.dimensions.height} px",
+            fill="#49423a",
+            font=header_font,
+        )
+        draw.text(
+            (self.dashboard_width - 372, 78),
+            f"analysis source: {summary.analysis_source}",
+            fill="#6a645a",
+            font=small_font,
+        )
+
+        histogram_box = (margin, 104, self.dashboard_width - margin, 592)
+        self._draw_histogram_panel(draw, histogram_box, image, summary, section_font, body_font, small_font)
+
+        summary_box = (margin, 624, 812, 992)
+        self._draw_summary_panel(
+            draw,
+            summary_box,
+            summary,
+            section_font,
+            label_font,
+            value_font,
+            body_font,
+            small_font,
+        )
+
+        card_gap = 20
+        card_left = 832
+        card_width = self.dashboard_width - margin - card_left
+        card_height = 168
+        self._draw_rgb_card(
+            canvas,
+            draw,
+            (card_left, 624, card_left + card_width, 624 + card_height),
+            summary,
+            section_font,
+            body_font,
+            small_font,
+        )
+        self._draw_saturation_card(
+            canvas,
+            draw,
+            (
+                card_left,
+                624 + card_height + card_gap,
+                card_left + card_width,
+                992,
+            ),
+            summary,
+            section_font,
+            body_font,
+            small_font,
+        )
+
+        canvas.save(output_path, format="PNG")
+
+    def _draw_histogram_panel(
+        self,
+        draw: ImageDraw.ImageDraw,
+        box: tuple[int, int, int, int],
+        image: Image.Image,
+        summary: DiagnosticSummary,
+        heading_font,
+        body_font,
+        small_font,
+    ) -> None:
+        left, top, right, bottom = box
+        draw.rounded_rectangle(box, radius=18, fill="#ffffff", outline="#d5d0c7", width=2)
+        draw.text((left + 20, top + 14), "Histogram", fill="#1f1f1f", font=heading_font)
+        draw.text(
+            (right - 300, top + 18),
+            f"shadow clip {summary.luma.clipped_black_pct:.2f}% | highlight clip {summary.luma.clipped_white_pct:.2f}%",
+            fill="#555555",
+            font=small_font,
+        )
+
+        plot_left = left + 24
+        plot_top = top + 58
+        plot_right = right - 24
+        plot_bottom = bottom - 30
+        draw.rectangle((plot_left, plot_top, plot_right, plot_bottom), fill="#f7f7f3", outline="#e4dfd5")
+
+        histograms = _channel_histograms(image)
+        luma_hist = _luma_histogram(image)
+        max_value = max(max(channel) for channel in histograms + [luma_hist])
+        if max_value <= 0:
+            max_value = 1
+
+        for fraction in (0.25, 0.5, 0.75):
+            y = plot_bottom - int((plot_bottom - plot_top) * fraction)
+            draw.line((plot_left, y, plot_right, y), fill="#ece6dc", width=1)
+
+        self._draw_histogram_curve(draw, histograms[0], plot_left, plot_top, plot_right, plot_bottom, max_value, "#d56a6a")
+        self._draw_histogram_curve(draw, histograms[1], plot_left, plot_top, plot_right, plot_bottom, max_value, "#5fae63")
+        self._draw_histogram_curve(draw, histograms[2], plot_left, plot_top, plot_right, plot_bottom, max_value, "#5b7fcb")
+        self._draw_histogram_curve(draw, luma_hist, plot_left, plot_top, plot_right, plot_bottom, max_value, "#252525", width=3)
+
+        draw.text((plot_left + 4, plot_bottom + 4), "0", fill="#666666", font=small_font)
+        draw.text((plot_right - 12, plot_bottom + 4), "255", fill="#666666", font=small_font)
+        draw.text((plot_left + 4, plot_top + 4), "luma + RGB overlay", fill="#7b756a", font=small_font)
+
+    def _draw_histogram_curve(
+        self,
+        draw: ImageDraw.ImageDraw,
+        values: list[int],
+        left: int,
+        top: int,
+        right: int,
+        bottom: int,
+        maximum: int,
+        color: str,
+        *,
+        width: int = 2,
+    ) -> None:
+        plot_width = right - left
+        height = bottom - top
+        if plot_width <= 1 or height <= 1:
+            return
+        points: list[tuple[int, int]] = []
+        for index, value in enumerate(values):
+            x = left + int((index / max(1, len(values) - 1)) * plot_width)
+            y = bottom - int((value / maximum) * height)
+            points.append((x, y))
+        draw.line(points, fill=color, width=width)
+
+    def _draw_summary_panel(
+        self,
+        draw: ImageDraw.ImageDraw,
+        box: tuple[int, int, int, int],
+        summary: DiagnosticSummary,
+        heading_font,
+        label_font,
+        value_font,
+        body_font,
+        small_font,
+    ) -> None:
+        self._draw_card_shell(draw, box, "Quick read", heading_font)
+        left, top, right, bottom = box
+        tile_gap = 14
+        tile_top = top + 56
+        tile_height = 100
+        tile_width = (right - left - 36 - tile_gap * 2) // 3
+        tile_boxes = [
+            (left + 18, tile_top, left + 18 + tile_width, tile_top + tile_height),
+            (left + 18 + tile_width + tile_gap, tile_top, left + 18 + tile_width * 2 + tile_gap, tile_top + tile_height),
+            (left + 18 + tile_width * 2 + tile_gap * 2, tile_top, right - 18, tile_top + tile_height),
+        ]
+
+        self._draw_metric_tile(
+            draw,
+            tile_boxes[0],
+            "Clipping",
+            [
+                f"Shadows {summary.luma.clipped_black_pct:.2f}%",
+                f"Highlights {summary.luma.clipped_white_pct:.2f}%",
+            ],
+            label_font,
+            value_font,
+            body_font,
+        )
+        self._draw_metric_tile(
+            draw,
+            tile_boxes[1],
+            "White balance",
+            [
+                summary.rgb_balance.temperature_hint.capitalize(),
+                f"Tint {summary.rgb_balance.tint_hint}",
+            ],
+            label_font,
+            value_font,
+            body_font,
+        )
+        self._draw_metric_tile(
+            draw,
+            tile_boxes[2],
+            "Saturation",
+            [
+                f"p95 {summary.saturation.p95:.1f}%",
+                f"High-sat {summary.saturation.high_saturation_pct:.2f}%",
+            ],
+            label_font,
+            value_font,
+            body_font,
+        )
+
+        footer_top = top + 176
+        draw.line((left + 18, footer_top, right - 18, footer_top), fill="#e2dbcf", width=1)
+        draw.text(
+            (left + 18, footer_top + 12),
+            f"Luma p01 {summary.luma.p01:.1f}  p50 {summary.luma.p50:.1f}  p99 {summary.luma.p99:.1f}",
+            fill="#4b463f",
+            font=small_font,
+        )
+        draw.text(
+            (left + 18, footer_top + 36),
+            (
+                f"RGB means R {summary.rgb_balance.red_mean:.1f}  "
+                f"G {summary.rgb_balance.green_mean:.1f}  B {summary.rgb_balance.blue_mean:.1f}"
+            ),
+            fill="#4b463f",
+            font=small_font,
+        )
+        draw.text(
+            (left + 18, footer_top + 60),
+            "Use the summary for exact numbers and the histogram for pattern reading.",
+            fill="#7b756a",
+            font=small_font,
+        )
+
+    def _draw_metric_tile(
+        self,
+        draw: ImageDraw.ImageDraw,
+        box: tuple[int, int, int, int],
+        title: str,
+        lines: list[str],
+        title_font,
+        value_font,
+        body_font,
+    ) -> None:
+        left, top, right, bottom = box
+        draw.rounded_rectangle(box, radius=14, fill="#f8f6f1", outline="#e6ded1", width=2)
+        draw.text((left + 14, top + 10), title, fill="#1f1f1f", font=title_font)
+        current_y = top + 42
+        for index, line in enumerate(lines):
+            font = value_font if index == 0 else body_font
+            draw.text((left + 14, current_y), line, fill="#404040", font=font)
+            current_y += _text_line_height(font) + (4 if index == 0 else 2)
+
+    def _draw_rgb_card(
+        self,
+        canvas: Image.Image,
+        draw: ImageDraw.ImageDraw,
+        box: tuple[int, int, int, int],
+        summary: DiagnosticSummary,
+        heading_font,
+        body_font,
+        small_font,
+    ) -> None:
+        self._draw_card_shell(draw, box, "RGB balance", heading_font)
+        left, top, right, bottom = box
+        draw.text(
+            (left + 18, top + 52),
+            f"R {summary.rgb_balance.red_mean:.1f}   G {summary.rgb_balance.green_mean:.1f}   B {summary.rgb_balance.blue_mean:.1f}",
+            fill="#404040",
+            font=body_font,
+        )
+        draw.text(
+            (left + 18, top + 84),
+            f"{summary.rgb_balance.temperature_hint.capitalize()} | {summary.rgb_balance.tint_hint}",
+            fill="#404040",
+            font=body_font,
+        )
+
+        max_mean = max(summary.rgb_balance.red_mean, summary.rgb_balance.green_mean, summary.rgb_balance.blue_mean, 1.0)
+        bar_left = left + 18
+        bar_right = right - 18
+        bar_top = bottom - 42
+        bar_height = 12
+        self._draw_bar(draw, (bar_left, bar_top, bar_right, bar_top + bar_height), summary.rgb_balance.red_mean / max_mean, "#d56a6a")
+        self._draw_bar(draw, (bar_left, bar_top + 16, bar_right, bar_top + 16 + bar_height), summary.rgb_balance.green_mean / max_mean, "#5fae63")
+        self._draw_bar(draw, (bar_left, bar_top + 32, bar_right, bar_top + 32 + bar_height), summary.rgb_balance.blue_mean / max_mean, "#5b7fcb")
+
+    def _draw_saturation_card(
+        self,
+        canvas: Image.Image,
+        draw: ImageDraw.ImageDraw,
+        box: tuple[int, int, int, int],
+        summary: DiagnosticSummary,
+        heading_font,
+        body_font,
+        small_font,
+    ) -> None:
+        self._draw_card_shell(draw, box, "Saturation", heading_font)
+        left, top, right, bottom = box
+        draw.text((left + 18, top + 54), f"p50 {summary.saturation.p50:.1f}%", fill="#404040", font=body_font)
+        draw.text((left + 18, top + 84), f"p95 {summary.saturation.p95:.1f}%", fill="#404040", font=body_font)
+        self._draw_bar(draw, (left + 18, bottom - 34, right - 18, bottom - 12), summary.saturation.p95 / 100.0, "#a3682b")
+
+    def _draw_card_shell(
+        self,
+        draw: ImageDraw.ImageDraw,
+        box: tuple[int, int, int, int],
+        title: str,
+        heading_font,
+    ) -> None:
+        draw.rounded_rectangle(box, radius=18, fill="#ffffff", outline="#d5d0c7", width=2)
+        left, top, *_ = box
+        draw.text((left + 18, top + 14), title, fill="#1f1f1f", font=heading_font)
+
+    def _draw_key_value_block(
+        self,
+        draw: ImageDraw.ImageDraw,
+        x: int,
+        y: int,
+        lines: list[str],
+        font,
+    ) -> None:
+        line_height = _text_line_height(font)
+        for index, line in enumerate(lines):
+            draw.text((x, y + index * line_height), line, fill="#404040", font=font)
+
+    def _draw_bar(
+        self,
+        draw: ImageDraw.ImageDraw,
+        box: tuple[int, int, int, int],
+        fraction: float,
+        color: str,
+    ) -> None:
+        left, top, right, bottom = box
+        draw.rounded_rectangle(box, radius=8, fill="#ece7de")
+        fraction = max(0.0, min(1.0, fraction))
+        fill_right = left + int((right - left) * fraction)
+        draw.rounded_rectangle((left, top, fill_right, bottom), radius=8, fill=color)
+
+    def _font(self, size: int):
+        if ImageFont is None:
+            raise RenderFailedError("Pillow fonts are unavailable.")
+        try:
+            return ImageFont.truetype("DejaVuSans.ttf", size=size)
+        except OSError:
+            return ImageFont.load_default()
+
+
+def _channel_histograms(image: Image.Image) -> list[list[int]]:
+    red_hist = [0] * 256
+    green_hist = [0] * 256
+    blue_hist = [0] * 256
+    for red, green, blue in image.getdata():
+        red_hist[red] += 1
+        green_hist[green] += 1
+        blue_hist[blue] += 1
+    return [red_hist, green_hist, blue_hist]
+
+
+def _luma_histogram(image: Image.Image) -> list[int]:
+    luma_hist = [0] * 256
+    for red, green, blue in image.getdata():
+        luma = 0.2126 * red + 0.7152 * green + 0.0722 * blue
+        luma_hist[min(255, max(0, int(round(luma))))] += 1
+    return luma_hist
+
+
+def _histogram_percentiles(histogram: list[int], percentiles: list[float]) -> dict[float, float]:
+    total = sum(histogram)
+    if total <= 0:
+        return {percentile: 0.0 for percentile in percentiles}
+
+    result: dict[float, float] = {}
+    for percentile in percentiles:
+        threshold = total * (percentile / 100.0)
+        cumulative = 0
+        for index, count in enumerate(histogram):
+            cumulative += count
+            if cumulative >= threshold:
+                result[percentile] = float(index)
+                break
+        else:
+            result[percentile] = float(len(histogram) - 1)
+    return result
+
+
+def _histogram_tail_pct(
+    histogram: list[int],
+    *,
+    lower_bound: int | None = None,
+    upper_bound: int | None = None,
+) -> float:
+    total = sum(histogram)
+    if total <= 0:
+        return 0.0
+
+    if lower_bound is not None:
+        count = sum(histogram[lower_bound:])
+    elif upper_bound is not None:
+        count = sum(histogram[: upper_bound + 1])
+    else:
+        count = 0
+    return (count / total) * 100.0
+
+
+def _rgb_saturation(red: int, green: int, blue: int) -> float:
+    maximum = max(red, green, blue)
+    minimum = min(red, green, blue)
+    if maximum <= 0:
+        return 0.0
+    return (maximum - minimum) / maximum
+
+
+def _temperature_hint(red_mean: float, blue_mean: float) -> str:
+    delta = red_mean - blue_mean
+    if delta > 12.0:
+        return "warm"
+    if delta < -12.0:
+        return "cool"
+    return "neutral"
+
+
+def _tint_hint(red_mean: float, green_mean: float, blue_mean: float) -> str:
+    neutral_green = (red_mean + blue_mean) / 2.0
+    delta = green_mean - neutral_green
+    if delta > 8.0:
+        return "green"
+    if delta < -8.0:
+        return "magenta"
+    return "neutral"
+
+
+def _text_line_height(font) -> int:
+    bbox = font.getbbox("Ag")
+    return int(math.ceil((bbox[3] - bbox[1]) * 1.25))
 
 
 def build_backend_registry() -> dict[str, RenderBackend]:

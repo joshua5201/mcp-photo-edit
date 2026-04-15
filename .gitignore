@@ -7,3 +7,5 @@
 .gemini
 __pycache__/
 *.egg-info/
+*.NEF
+plans/

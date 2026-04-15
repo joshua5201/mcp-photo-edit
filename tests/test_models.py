@@ -1,9 +1,20 @@
 from __future__ import annotations
 
+import json
+
 import pytest
 from pydantic import ValidationError
 
-from mcp_photo_edit.models import AdjustmentPatch, AdjustmentState, CropAdjustment, RGBMixer
+from mcp_photo_edit.models import (
+    AdjustmentPatch,
+    AdjustmentState,
+    CropAdjustment,
+    HistoryStep,
+    PreviewResult,
+    RGBMixer,
+    SessionState,
+    SourceImageInfo,
+)
 
 
 def test_crop_requires_positive_area() -> None:
@@ -88,3 +99,73 @@ def test_sharpening_fields_validate_ranges() -> None:
 
     with pytest.raises(ValidationError):
         AdjustmentPatch(sharpen_amount=0.5)
+
+
+def test_session_and_preview_models_include_nullable_advanced_image_info_fields() -> None:
+    history_step = HistoryStep(
+        step_id="0001",
+        kind="init",
+        adjustments=AdjustmentState(),
+    )
+    session = SessionState(
+        session_id="session-123",
+        source=SourceImageInfo(
+            input_path="/tmp/source.jpg",
+            file_name="source.jpg",
+            suffix=".jpg",
+        ),
+        workspace_dir="/tmp/workspace/session-123",
+        preview_path="/tmp/workspace/session-123/preview-0001.jpg",
+        history=[
+            HistoryStep(
+                step_id="0001",
+                kind="init",
+                adjustments=AdjustmentState(),
+            )
+        ],
+        history_index=0,
+    )
+    preview = PreviewResult(preview_path="/tmp/workspace/session-123/preview-0001.jpg")
+
+    assert session.diagnostic_dashboard_path is None
+    assert session.diagnostic_summary is None
+    assert preview.diagnostic_dashboard_path is None
+    assert preview.diagnostic_summary is None
+    assert history_step.diagnostic_dashboard_path is None
+    assert history_step.diagnostic_summary is None
+    assert session.model_dump()["diagnostic_dashboard_path"] is None
+    assert preview.model_dump()["diagnostic_summary"] is None
+
+
+def test_legacy_session_manifest_without_advanced_image_info_fields_loads_cleanly() -> None:
+    legacy_manifest = {
+        "session_id": "legacy123",
+        "source": {
+            "input_path": "/tmp/source.nef",
+            "file_name": "source.nef",
+            "suffix": ".nef",
+            "width": 4000,
+            "height": 3000,
+        },
+        "workspace_dir": "/tmp/workspace/legacy123",
+        "state_path": None,
+        "xmp_path": "/tmp/workspace/legacy123/session.pp3",
+        "preview_path": "/tmp/workspace/legacy123/preview-0001.jpg",
+        "adjustments": AdjustmentState().model_dump(),
+        "history": [
+            {
+                "step_id": "step-0001",
+                "kind": "init",
+                "adjustments": AdjustmentState().model_dump(),
+                "state_path": "/tmp/workspace/legacy123/history/step-0001.pp3",
+            }
+        ],
+        "history_index": 0,
+        "backend": "rawtherapee-cli",
+    }
+
+    session = SessionState.model_validate_json(json.dumps(legacy_manifest))
+
+    assert session.state_path == "/tmp/workspace/legacy123/session.pp3"
+    assert session.diagnostic_dashboard_path is None
+    assert session.diagnostic_summary is None

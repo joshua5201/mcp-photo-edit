@@ -1,15 +1,15 @@
 ---
 name: mcp-photo-edit
-description: Use this skill when working with the mcp-photo-edit MCP server for iterative RAW or raster photo editing through RawTherapee.
+description: Use this skill when a user wants to adjust, edit, refine, or lightly retouch a photo or image.
 ---
 
 # mcp-photo-edit
 
-Use this skill when an agent should edit photos through the `photo-edit` MCP server instead of trying to describe image edits abstractly without tools.
+Use this skill when an agent should adjust, edit, modify, retouch lightly, enhance, improve, tune, polish, brush up, rebalance, correct, crop, rotate, or otherwise refine a photo or image.
 
 ## When To Use
 
-- The task is about editing a photo through this project.
+- The task is about refining a photo or image.
 - The user wants iterative preview / adjust / export behavior.
 - The workflow should use the MCP server instead of hand-authoring RawTherapee `PP3`.
 
@@ -22,13 +22,39 @@ Use this skill when an agent should edit photos through the `photo-edit` MCP ser
 ## Recommended Workflow
 
 1. Call `create_edit_session` with the image path.
-2. Inspect the returned preview image, `preview_count`, current state, and history cursor fields such as `history_index`, `history_length`, `can_undo`, and `can_redo`.
+2. Inspect the returned `preview_path`. If `diagnostic_dashboard_path` or `diagnostic_summary` is present, you must check and use them, along with the current adjustment state, `preview_count`, and history cursor fields such as `history_index`, `history_length`, `can_undo`, and `can_redo`.
 3. Use `list_supported_adjustments` if ranges or semantics are unclear.
 4. Apply small patches with `apply_adjustments`.
 5. Use `undo_adjustment` or `redo_adjustment` to move across committed edit steps when needed.
 6. Re-check the preview after each patch.
 7. Use `render_preview` whenever you want a fresh preview artifact for the current session state.
 8. If operating in **Interactive Mode**, ask the user for confirmation before exporting. Otherwise, call `export_image` only when the preview matches the requested criteria.
+
+## Advanced Image Info
+
+- Use `preview_path` for aesthetic intent and overall image judgment.
+- Use `diagnostic_dashboard_path` for quick technical pattern reading, especially clipping, balance, and saturation distribution.
+- Use `diagnostic_summary` for exact numeric facts when deciding whether exposure, white balance, or saturation still needs adjustment.
+- Use the current adjustment state for continuity, so each patch builds on the session's actual edit history instead of re-inferencing from scratch.
+- When dashboard and preview disagree, favor the preview for aesthetic intent and the summary JSON for hard facts.
+- When advanced image info is disabled or absent, stay preview-first and continue using the current adjustment state and history as the source of continuity.
+
+## Editing Order
+
+Follow this order unless the user asks for a different look:
+
+1. Composition first: crop and orientation before tonal polish.
+2. White balance next: color temperature and green balance before stronger tonal shaping.
+3. Tone and exposure: adjust exposure, highlights, shadows, and contrast after the image is framed and balanced.
+4. Saturation after tone is stable: avoid pushing color until exposure and white balance are settled.
+5. Finishing last: denoise and sharpening should come after the image's core look is established.
+
+## Guardrails
+
+- Do not over-trust histograms or chase a perfectly centered graph.
+- Do not flatten stylized scenes into technical neutrality when the image intentionally reads warm, cool, low-key, high-key, or otherwise stylized.
+- Do not assume the most technically neutral result is always the right edit.
+- Treat diagnostic signals as support for judgment, not as a replacement for the preview.
 
 ## Interactive Mode
 
