@@ -22,7 +22,7 @@ Use this skill when an agent should adjust, edit, modify, retouch lightly, enhan
 ## Recommended Workflow
 
 1. Call `create_edit_session` with the image path.
-2. Inspect the returned `preview_path`, and when available also inspect `diagnostic_dashboard_path`, `diagnostic_summary`, current adjustment state, `preview_count`, and history cursor fields such as `history_index`, `history_length`, `can_undo`, and `can_redo`.
+2. Inspect the returned `preview_path`. If `diagnostic_dashboard_path` or `diagnostic_summary` is present, you must check and use them, along with the current adjustment state, `preview_count`, and history cursor fields such as `history_index`, `history_length`, `can_undo`, and `can_redo`.
 3. Use `list_supported_adjustments` if ranges or semantics are unclear.
 4. Apply small patches with `apply_adjustments`.
 5. Use `undo_adjustment` or `redo_adjustment` to move across committed edit steps when needed.

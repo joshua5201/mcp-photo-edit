@@ -6,6 +6,17 @@ The server exposes a session-based editing workflow instead of raw sidecar manip
 
 Each session now also maintains an explicit undo / redo timeline in `session.json`. Semantic edit history is tracked separately from preview-render history.
 
+## Advanced Image Info
+
+This project can attach extra diagnostic output to each preview render:
+
+- `preview_path` remains the primary image for aesthetic judgment.
+- `diagnostic_dashboard_path` adds a separate technical dashboard image.
+- `diagnostic_summary` adds machine-readable stats for exposure, balance, and saturation.
+- Set `DISABLE_ADVANCED_IMAGE_INFO=true` to turn the diagnostics off and keep the original preview-first workflow.
+
+When enabled, the dashboard is meant to complement the clean preview rather than replace it.
+
 ## Examples
 
 Check the [demo/](demo/) directory for full session details, including `session.json`, `PP3` sidecars, and intermediate previews in the `workspace/` folder.
@@ -19,16 +30,16 @@ The demo photographs are original work and are not covered by the GPL license. C
 
 Compare the baseline image with the two Fujifilm-style outputs below. Each thumbnail links to the full-size file.
 
-| Before | After: Advanced info disabled | After: Advanced info enabled |
+| Before | Advanced image info disabled | Advanced image info enabled |
 | :--- | :--- | :--- |
-| <a href="demo/cosplay.jpg"><img src="demo/cosplay.jpg" alt="Before" width="240"></a> | <a href="demo/fujifilm_style_pro.jpg"><img src="demo/fujifilm_style_pro.jpg" alt="After without advanced info" width="240"></a> | <a href="demo/fujifilm_style_advanced_info_pro.jpg"><img src="demo/fujifilm_style_advanced_info_pro.jpg" alt="After with advanced info" width="240"></a> |
+| <a href="demo/cosplay.jpg"><img src="demo/cosplay.jpg" alt="Before" width="240"></a> | <a href="demo/fujifilm_style_pro.jpg"><img src="demo/fujifilm_style_pro.jpg" alt="After with advanced image info disabled" width="240"></a> | <a href="demo/fujifilm_style_advanced_info_pro.jpg"><img src="demo/fujifilm_style_advanced_info_pro.jpg" alt="After with advanced image info enabled" width="240"></a> |
 
 **Model:** gemini-3.1-pro-preview
 
 ### Example: CCD Style (v0.2.0)
 
-This example compares advanced-info-assisted runs using the same source image and prompt style.
-The main table shows the matching-aspect-ratio outputs; the GPT-5.4 Mini result is shown separately because it ignored the requested crop.
+This example compares advanced image info-assisted runs using the same source image and prompt style.
+The main table shows the matching-aspect-ratio outputs; the GPT-5.4 Mini result is shown separately because it did not follow the requested crop.
 
 **Prompt:**
 > Apply a 200s CCD camera like profile to `demo/cosplay.NEF`. Apply a crop to focus on the center but keep the aspect ratio, export the result as `demo/ccd_style.jpg`
@@ -37,7 +48,7 @@ Main comparison:
 
 | Baseline | Gemini 3 Flash | Gemini 3.1 Pro | GPT-5.4 Medium |
 | :--- | :--- | :--- | :--- |
-| <a href="demo/cosplay.jpg"><img src="demo/cosplay.jpg" alt="Before" width="240"></a> | <a href="demo/ccd_style_advanced_info_flash.jpg"><img src="demo/ccd_style_advanced_info_flash.jpg" alt="CCD style by Gemini 3 Flash" width="240"></a> | <a href="demo/ccd_style_advanced_info_pro.jpg"><img src="demo/ccd_style_advanced_info_pro.jpg" alt="CCD style by Gemini 3.1 Pro" width="240"></a> | <a href="demo/ccd_style_advanced_info_gpt54_medium.jpg"><img src="demo/ccd_style_advanced_info_gpt54_medium.jpg" alt="CCD style by GPT-5.4 Medium" width="240"></a> |
+| <a href="demo/cosplay.jpg"><img src="demo/cosplay.jpg" alt="Baseline" width="240"></a> | <a href="demo/ccd_style_advanced_info_flash.jpg"><img src="demo/ccd_style_advanced_info_flash.jpg" alt="CCD style by Gemini 3 Flash" width="240"></a> | <a href="demo/ccd_style_advanced_info_pro.jpg"><img src="demo/ccd_style_advanced_info_pro.jpg" alt="CCD style by Gemini 3.1 Pro" width="240"></a> | <a href="demo/ccd_style_advanced_info_gpt54_medium.jpg"><img src="demo/ccd_style_advanced_info_gpt54_medium.jpg" alt="CCD style by GPT-5.4 Medium" width="240"></a> |
 
 **Models:** gemini-3-flash-preview, gemini-3.1-pro-preview, gpt-5.4-medium
 
