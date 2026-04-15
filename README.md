@@ -55,6 +55,8 @@ Not in scope:
 - large preset libraries
 - batch editing UX
 
+For a repeatable enabled-vs-disabled review of advanced image info, see [plans/milestone-5-outcome-review.md](plans/milestone-5-outcome-review.md).
+
 ## Requirements
 
 - Python 3.12+
