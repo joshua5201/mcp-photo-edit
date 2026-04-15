@@ -1,0 +1,126 @@
+{
+  "session_id": "e84956452a1a",
+  "session_label": null,
+  "source": {
+    "input_path": "[REDACTED]",
+    "file_name": "cosplay.NEF",
+    "suffix": ".nef",
+    "width": 4032,
+    "height": 6056
+  },
+  "workspace_dir": "[REDACTED]",
+  "state_path": "[REDACTED]",
+  "xmp_path": null,
+  "preview_path": "[REDACTED]",
+  "diagnostic_dashboard_path": null,
+  "diagnostic_summary": null,
+  "preview_max_size": 1024,
+  "preview_history": [
+    {
+      "sequence": 1,
+      "path": "[REDACTED]",
+      "rendered_at": "2026-04-15T15:30:08.564380Z"
+    },
+    {
+      "sequence": 2,
+      "path": "[REDACTED]",
+      "rendered_at": "2026-04-15T15:30:23.550461Z"
+    }
+  ],
+  "adjustments": {
+    "exposure": 0.3,
+    "contrast": 25.0,
+    "saturation": -15.0,
+    "rgb_mixer": null,
+    "denoise_luma": 0.0,
+    "denoise_detail": 0.0,
+    "denoise_chroma": 0.0,
+    "color_temperature": null,
+    "green_balance": null,
+    "highlights": 0.0,
+    "shadows": 25.0,
+    "sharpen_amount": 0,
+    "sharpen_radius": 0.5,
+    "sharpen_contrast": 20.0,
+    "orientation": 0,
+    "crop": {
+      "left": 0.1,
+      "top": 0.1,
+      "right": 0.9,
+      "bottom": 0.9
+    }
+  },
+  "history": [
+    {
+      "step_id": "0001",
+      "kind": "init",
+      "created_at": "2026-04-15T15:30:07.057845Z",
+      "adjustments": {
+        "exposure": 0.0,
+        "contrast": 0.0,
+        "saturation": 0.0,
+        "rgb_mixer": null,
+        "denoise_luma": 0.0,
+        "denoise_detail": 0.0,
+        "denoise_chroma": 0.0,
+        "color_temperature": null,
+        "green_balance": null,
+        "highlights": 0.0,
+        "shadows": 0.0,
+        "sharpen_amount": 0,
+        "sharpen_radius": 0.5,
+        "sharpen_contrast": 20.0,
+        "orientation": 0,
+        "crop": null
+      },
+      "state_path": "[REDACTED]",
+      "preview_path": "[REDACTED]",
+      "preview_sequence": 1,
+      "diagnostic_dashboard_path": null,
+      "diagnostic_summary": null,
+      "description": null
+    },
+    {
+      "step_id": "0002",
+      "kind": "apply_adjustments",
+      "created_at": "2026-04-15T15:30:22.073386Z",
+      "adjustments": {
+        "exposure": 0.3,
+        "contrast": 25.0,
+        "saturation": -15.0,
+        "rgb_mixer": null,
+        "denoise_luma": 0.0,
+        "denoise_detail": 0.0,
+        "denoise_chroma": 0.0,
+        "color_temperature": null,
+        "green_balance": null,
+        "highlights": 0.0,
+        "shadows": 25.0,
+        "sharpen_amount": 0,
+        "sharpen_radius": 0.5,
+        "sharpen_contrast": 20.0,
+        "orientation": 0,
+        "crop": {
+          "left": 0.1,
+          "top": 0.1,
+          "right": 0.9,
+          "bottom": 0.9
+        }
+      },
+      "state_path": "[REDACTED]",
+      "preview_path": "[REDACTED]",
+      "preview_sequence": 2,
+      "diagnostic_dashboard_path": null,
+      "diagnostic_summary": null,
+      "description": null
+    }
+  ],
+  "history_index": 1,
+  "created_at": "2026-04-15T15:30:07.073776Z",
+  "updated_at": "2026-04-15T15:30:49.257111Z",
+  "last_rendered_at": "2026-04-15T15:30:49.257120Z",
+  "backend": "rawtherapee-cli",
+  "can_undo": true,
+  "can_redo": false,
+  "history_length": 2
+}

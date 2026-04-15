@@ -1,0 +1,313 @@
+{
+  "session_id": "f7a796a6d884",
+  "session_label": "ccd-style-cosplay",
+  "source": {
+    "input_path": "/home/tsn/dev/slider/mcp-photo-edit/demo/cosplay.NEF",
+    "file_name": "cosplay.NEF",
+    "suffix": ".nef",
+    "width": 4032,
+    "height": 6056
+  },
+  "workspace_dir": "/home/tsn/.mcp-photo-edit/f7a796a6d884",
+  "state_path": "/home/tsn/.mcp-photo-edit/f7a796a6d884/session.pp3",
+  "xmp_path": null,
+  "preview_path": "/home/tsn/.mcp-photo-edit/f7a796a6d884/preview-0003.jpg",
+  "diagnostic_dashboard_path": "/home/tsn/.mcp-photo-edit/f7a796a6d884/dashboard-0003.png",
+  "diagnostic_summary": {
+    "analysis_source": "current_rendered_state",
+    "dimensions": {
+      "width": 1065,
+      "height": 1600
+    },
+    "luma": {
+      "p01": 21.0,
+      "p50": 51.0,
+      "p99": 186.0,
+      "clipped_black_pct": 0.0009389671361502347,
+      "clipped_white_pct": 0.0009976525821596245
+    },
+    "rgb_balance": {
+      "red_mean": 76.26841255868544,
+      "green_mean": 70.48819894366197,
+      "blue_mean": 82.58523180751173,
+      "temperature_hint": "neutral",
+      "tint_hint": "magenta"
+    },
+    "saturation": {
+      "p50": 24.0,
+      "p95": 51.0,
+      "high_saturation_pct": 0.4677816901408451
+    }
+  },
+  "preview_max_size": 1600,
+  "preview_history": [
+    {
+      "sequence": 1,
+      "path": "/home/tsn/.mcp-photo-edit/f7a796a6d884/preview-0001.jpg",
+      "rendered_at": "2026-04-15T15:51:59.697442Z"
+    },
+    {
+      "sequence": 2,
+      "path": "/home/tsn/.mcp-photo-edit/f7a796a6d884/preview-0002.jpg",
+      "rendered_at": "2026-04-15T15:52:28.890303Z"
+    },
+    {
+      "sequence": 3,
+      "path": "/home/tsn/.mcp-photo-edit/f7a796a6d884/preview-0003.jpg",
+      "rendered_at": "2026-04-15T15:52:45.478973Z"
+    }
+  ],
+  "adjustments": {
+    "exposure": 0.4,
+    "contrast": 22.0,
+    "saturation": 20.0,
+    "rgb_mixer": {
+      "red": [
+        102.0,
+        -1.0,
+        -1.0
+      ],
+      "green": [
+        -2.0,
+        105.0,
+        -3.0
+      ],
+      "blue": [
+        1.0,
+        -4.0,
+        103.0
+      ]
+    },
+    "denoise_luma": 8.0,
+    "denoise_detail": 28.0,
+    "denoise_chroma": 12.0,
+    "color_temperature": 5250.0,
+    "green_balance": 1.01,
+    "highlights": 3.0,
+    "shadows": 12.0,
+    "sharpen_amount": 180,
+    "sharpen_radius": 0.75,
+    "sharpen_contrast": 34.0,
+    "orientation": 0,
+    "crop": {
+      "left": 0.18,
+      "top": 0.14,
+      "right": 0.82,
+      "bottom": 0.78
+    }
+  },
+  "history": [
+    {
+      "step_id": "0001",
+      "kind": "init",
+      "created_at": "2026-04-15T15:51:58.071344Z",
+      "adjustments": {
+        "exposure": 0.0,
+        "contrast": 0.0,
+        "saturation": 0.0,
+        "rgb_mixer": null,
+        "denoise_luma": 0.0,
+        "denoise_detail": 0.0,
+        "denoise_chroma": 0.0,
+        "color_temperature": null,
+        "green_balance": null,
+        "highlights": 0.0,
+        "shadows": 0.0,
+        "sharpen_amount": 0,
+        "sharpen_radius": 0.5,
+        "sharpen_contrast": 20.0,
+        "orientation": 0,
+        "crop": null
+      },
+      "state_path": "/home/tsn/.mcp-photo-edit/f7a796a6d884/history/step-0001.pp3",
+      "preview_path": "/home/tsn/.mcp-photo-edit/f7a796a6d884/preview-0001.jpg",
+      "preview_sequence": 1,
+      "diagnostic_dashboard_path": "/home/tsn/.mcp-photo-edit/f7a796a6d884/dashboard-0001.png",
+      "diagnostic_summary": {
+        "analysis_source": "current_rendered_state",
+        "dimensions": {
+          "width": 1065,
+          "height": 1600
+        },
+        "luma": {
+          "p01": 18.0,
+          "p50": 65.0,
+          "p99": 253.0,
+          "clipped_black_pct": 0.00005868544600938967,
+          "clipped_white_pct": 0.15146713615023474
+        },
+        "rgb_balance": {
+          "red_mean": 80.12024882629107,
+          "green_mean": 78.19246654929577,
+          "blue_mean": 74.55866431924882,
+          "temperature_hint": "neutral",
+          "tint_hint": "neutral"
+        },
+        "saturation": {
+          "p50": 13.0,
+          "p95": 34.0,
+          "high_saturation_pct": 0.0020539906103286382
+        }
+      },
+      "description": null
+    },
+    {
+      "step_id": "0002",
+      "kind": "apply_adjustments",
+      "created_at": "2026-04-15T15:52:26.070151Z",
+      "adjustments": {
+        "exposure": 0.25,
+        "contrast": 24.0,
+        "saturation": 18.0,
+        "rgb_mixer": {
+          "red": [
+            104.0,
+            -2.0,
+            -2.0
+          ],
+          "green": [
+            -4.0,
+            108.0,
+            -4.0
+          ],
+          "blue": [
+            2.0,
+            -6.0,
+            104.0
+          ]
+        },
+        "denoise_luma": 8.0,
+        "denoise_detail": 28.0,
+        "denoise_chroma": 12.0,
+        "color_temperature": 4900.0,
+        "green_balance": 1.03,
+        "highlights": 4.0,
+        "shadows": 10.0,
+        "sharpen_amount": 190,
+        "sharpen_radius": 0.8,
+        "sharpen_contrast": 36.0,
+        "orientation": 0,
+        "crop": {
+          "left": 0.18,
+          "top": 0.14,
+          "right": 0.82,
+          "bottom": 0.78
+        }
+      },
+      "state_path": "/home/tsn/.mcp-photo-edit/f7a796a6d884/history/step-0002.pp3",
+      "preview_path": "/home/tsn/.mcp-photo-edit/f7a796a6d884/preview-0002.jpg",
+      "preview_sequence": 2,
+      "diagnostic_dashboard_path": "/home/tsn/.mcp-photo-edit/f7a796a6d884/dashboard-0002.png",
+      "diagnostic_summary": {
+        "analysis_source": "current_rendered_state",
+        "dimensions": {
+          "width": 1065,
+          "height": 1600
+        },
+        "luma": {
+          "p01": 18.0,
+          "p50": 46.0,
+          "p99": 178.0,
+          "clipped_black_pct": 0.0014084507042253522,
+          "clipped_white_pct": 0.00011737089201877934
+        },
+        "rgb_balance": {
+          "red_mean": 66.31758920187794,
+          "green_mean": 65.99858978873239,
+          "blue_mean": 82.20555751173708,
+          "temperature_hint": "cool",
+          "tint_hint": "magenta"
+        },
+        "saturation": {
+          "p50": 29.0,
+          "p95": 60.0,
+          "high_saturation_pct": 1.3578051643192488
+        }
+      },
+      "description": null
+    },
+    {
+      "step_id": "0003",
+      "kind": "apply_adjustments",
+      "created_at": "2026-04-15T15:52:42.658336Z",
+      "adjustments": {
+        "exposure": 0.4,
+        "contrast": 22.0,
+        "saturation": 20.0,
+        "rgb_mixer": {
+          "red": [
+            102.0,
+            -1.0,
+            -1.0
+          ],
+          "green": [
+            -2.0,
+            105.0,
+            -3.0
+          ],
+          "blue": [
+            1.0,
+            -4.0,
+            103.0
+          ]
+        },
+        "denoise_luma": 8.0,
+        "denoise_detail": 28.0,
+        "denoise_chroma": 12.0,
+        "color_temperature": 5250.0,
+        "green_balance": 1.01,
+        "highlights": 3.0,
+        "shadows": 12.0,
+        "sharpen_amount": 180,
+        "sharpen_radius": 0.75,
+        "sharpen_contrast": 34.0,
+        "orientation": 0,
+        "crop": {
+          "left": 0.18,
+          "top": 0.14,
+          "right": 0.82,
+          "bottom": 0.78
+        }
+      },
+      "state_path": "/home/tsn/.mcp-photo-edit/f7a796a6d884/history/step-0003.pp3",
+      "preview_path": "/home/tsn/.mcp-photo-edit/f7a796a6d884/preview-0003.jpg",
+      "preview_sequence": 3,
+      "diagnostic_dashboard_path": "/home/tsn/.mcp-photo-edit/f7a796a6d884/dashboard-0003.png",
+      "diagnostic_summary": {
+        "analysis_source": "current_rendered_state",
+        "dimensions": {
+          "width": 1065,
+          "height": 1600
+        },
+        "luma": {
+          "p01": 21.0,
+          "p50": 51.0,
+          "p99": 186.0,
+          "clipped_black_pct": 0.0009389671361502347,
+          "clipped_white_pct": 0.0009976525821596245
+        },
+        "rgb_balance": {
+          "red_mean": 76.26841255868544,
+          "green_mean": 70.48819894366197,
+          "blue_mean": 82.58523180751173,
+          "temperature_hint": "neutral",
+          "tint_hint": "magenta"
+        },
+        "saturation": {
+          "p50": 24.0,
+          "p95": 51.0,
+          "high_saturation_pct": 0.4677816901408451
+        }
+      },
+      "description": null
+    }
+  ],
+  "history_index": 2,
+  "created_at": "2026-04-15T15:51:58.086208Z",
+  "updated_at": "2026-04-15T15:53:14.338118Z",
+  "last_rendered_at": "2026-04-15T15:53:14.338126Z",
+  "backend": "rawtherapee-cli",
+  "can_undo": true,
+  "can_redo": false,
+  "history_length": 3
+}

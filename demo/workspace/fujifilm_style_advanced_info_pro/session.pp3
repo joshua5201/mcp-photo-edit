@@ -1,0 +1,41 @@
+[Exposure]
+Auto=false
+Compensation=0
+Brightness=0
+Contrast=15
+Saturation=-15
+Black=0
+HistogramMatching=false
+CurveFromHistogramMatching=false
+ClampOOG=false
+CurveMode=Standard
+CurveMode2=Standard
+
+[White Balance]
+Enabled=true
+Setting=Custom
+Temperature=5500
+Green=1.05
+Equal=1
+TemperatureBias=0
+CompatibilityVersion=2
+
+[Shadows & Highlights]
+Enabled=true
+Highlights=10
+HighlightTonalWidth=70
+Shadows=15
+ShadowTonalWidth=30
+Radius=40
+Lab=false
+
+[Crop]
+Enabled=true
+X=605
+Y=908
+W=2822
+H=4240
+FixedRatio=false
+Ratio=As Image
+Orientation=As Image
+Guide=Frame

@@ -6,35 +6,35 @@ The server exposes a session-based editing workflow instead of raw sidecar manip
 
 Each session now also maintains an explicit undo / redo timeline in `session.json`. Semantic edit history is tracked separately from preview-render history.
 
-## Examples 
+## Examples
 
 Check the [demo/](demo/) directory for full session details, including `session.json`, `PP3` sidecars, and intermediate previews in the `workspace/` folder.
 
-### Example: Hong Kong Vibrant Vibe (v0.1.0)
+The demo photographs are original work and are not covered by the GPL license. Commercial use is prohibited.
 
-This example demonstrates an agent-driven edit to achieve a "Hong Kong vibrant" look using Gemini 3 Flash.
-
-**Prompt:**
-> Adjust `demo/hk.jpg` to be more colorful, more Hong Kong vibrant, lively vibe. Crop / rotate the photo if you want. Export to `demo/hk_modified.jpg`
-
-| 1. Before | 2. After |
-| :--- | :--- |
-| ![Before](demo/hk.jpg) | ![After](demo/hk_modified.jpg) |
-
-**Model:** Gemini 3 Flash
-
-### Example: Japanese Film Style (v0.1.0)
+### Example: Fujifilm Style (v0.2.0)
 
 **Prompt:**
-> Apply a bright, airy Japanese film like profile to demo/japanese_film_style.NEF. Finally, apply a crop to focus on the center and export the result as japanese_film_style_modified.jpg
+> Apply a Fujifilm camera like profile to `demo/cosplay.NEF`. Apply a crop to focus on the center but keep the aspect ratio, export the result as `demo/fujifilm_style.jpg`
 
-| 1. Before | 2. After |
-| :--- | :--- |
-| ![Before](demo/japanese_film_style.jpg) | ![After](demo/japanese_film_style_modified.jpg) |
+| Before | After: Advanced info disabled | After: Advanced info enabled |
+| :--- | :--- | :--- |
+| ![Before](demo/cosplay.jpg) | ![After without advanced info](demo/fujifilm_style_pro.jpg) | ![After with advanced info](demo/fujifilm_style_advanced_info_pro.jpg) |
 
-Note: The original NEF file is not included in the repository. The "Before" image is a JPEG reference export. This photograph is original work and is not subject to the GPL license; commercial use is prohibited.
+**Model:** gemini-3.1-pro-preview
 
-**Model:** Gemini 3 Flash
+### Example: CCD Style (v0.2.0)
+
+This example compares two advanced-info-assisted runs using the same source image and prompt style.
+
+**Prompt:**
+> Apply a 200s CCD camera like profile to `demo/cosplay.NEF`. Apply a crop to focus on the center but keep the aspect ratio, export the result as `demo/ccd_style.jpg`
+
+| Before | After: Gemini 3 Flash | After: Gemini 3.1 Pro |
+| :--- | :--- | :--- |
+| ![Before](demo/cosplay.jpg) | ![CCD style by Gemini 3 Flash](demo/ccd_style_advanced_info_flash.jpg) | ![CCD style by Gemini 3.1 Pro](demo/ccd_style_advanced_info_pro.jpg) |
+
+**Models:** gemini-3-flash-preview, gemini-3.1-pro-preview
 
 ## Status
 

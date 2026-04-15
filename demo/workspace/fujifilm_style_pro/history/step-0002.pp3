@@ -1,0 +1,32 @@
+[Exposure]
+Auto=false
+Compensation=0.3
+Brightness=0
+Contrast=25
+Saturation=-15
+Black=0
+HistogramMatching=false
+CurveFromHistogramMatching=false
+ClampOOG=false
+CurveMode=Standard
+CurveMode2=Standard
+
+[Shadows & Highlights]
+Enabled=true
+Highlights=0
+HighlightTonalWidth=70
+Shadows=25
+ShadowTonalWidth=30
+Radius=40
+Lab=false
+
+[Crop]
+Enabled=true
+X=403
+Y=606
+W=3226
+H=4844
+FixedRatio=false
+Ratio=As Image
+Orientation=As Image
+Guide=Frame
