@@ -32,7 +32,7 @@ This example demonstrates an agent-driven edit to achieve a "Hong Kong vibrant" 
 | :--- | :--- |
 | ![Before](demo/japanese_film_style.jpg) | ![After](demo/japanese_film_style_modified.jpg) |
 
-Note: The original NEF file is not included in the repository. The "Before" image is a JPEG exported from Darktable without modifications. This photograph is original work and is not subject to the GPL license; commercial use is prohibited.
+Note: The original NEF file is not included in the repository. The "Before" image is a JPEG reference export. This photograph is original work and is not subject to the GPL license; commercial use is prohibited.
 
 **Model:** Gemini 3 Flash
 
@@ -230,10 +230,10 @@ RAW support depends on the local RawTherapee build and its bundled RAW decoders.
 ## Typical Agent Workflow
 
 1. Create a session from an input image.
-2. Inspect the returned preview image, `preview_count`, current adjustment state, and history cursor fields such as `history_index`, `history_length`, `can_undo`, and `can_redo`.
+2. Inspect the returned session state, including `preview_path`, `preview_history`, current adjustment state, and history cursor fields such as `history_index`, `history_length`, `can_undo`, and `can_redo`.
 3. Apply one or more adjustments.
 4. Use `undo_adjustment` or `redo_adjustment` when you need to move across committed edit steps.
-5. Re-check the preview by calling `render_preview` whenever you want a fresh preview artifact for the current step.
+5. Re-check the preview by calling `render_preview` whenever you want a fresh preview artifact and an explicit `preview_count` for the current step.
 6. Export a final image explicitly.
 
 See [SKILL.md](skills/mcp-photo-edit/SKILL.md) for an agent-facing usage guide.
@@ -287,7 +287,7 @@ src/mcp_photo_edit/
   render.py        Backend integrations
   server.py        MCP tool registration
 tests/
-docs/
+skills/
 ```
 
 ## Development
@@ -301,7 +301,7 @@ uv sync --extra dev
 Run tests:
 
 ```bash
-pytest
+uv run pytest
 ```
 
 Start the server over stdio:
