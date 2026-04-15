@@ -17,24 +17,37 @@ The demo photographs are original work and are not covered by the GPL license. C
 **Prompt:**
 > Apply a Fujifilm camera like profile to `demo/cosplay.NEF`. Apply a crop to focus on the center but keep the aspect ratio, export the result as `demo/fujifilm_style.jpg`
 
+Compare the baseline image with the two Fujifilm-style outputs below. Each thumbnail links to the full-size file.
+
 | Before | After: Advanced info disabled | After: Advanced info enabled |
 | :--- | :--- | :--- |
-| ![Before](demo/cosplay.jpg) | ![After without advanced info](demo/fujifilm_style_pro.jpg) | ![After with advanced info](demo/fujifilm_style_advanced_info_pro.jpg) |
+| <a href="demo/cosplay.jpg"><img src="demo/cosplay.jpg" alt="Before" width="240"></a> | <a href="demo/fujifilm_style_pro.jpg"><img src="demo/fujifilm_style_pro.jpg" alt="After without advanced info" width="240"></a> | <a href="demo/fujifilm_style_advanced_info_pro.jpg"><img src="demo/fujifilm_style_advanced_info_pro.jpg" alt="After with advanced info" width="240"></a> |
 
 **Model:** gemini-3.1-pro-preview
 
 ### Example: CCD Style (v0.2.0)
 
-This example compares two advanced-info-assisted runs using the same source image and prompt style.
+This example compares advanced-info-assisted runs using the same source image and prompt style.
+The main table shows the matching-aspect-ratio outputs; the GPT-5.4 Mini result is shown separately because it ignored the requested crop.
 
 **Prompt:**
 > Apply a 200s CCD camera like profile to `demo/cosplay.NEF`. Apply a crop to focus on the center but keep the aspect ratio, export the result as `demo/ccd_style.jpg`
 
-| Before | After: Gemini 3 Flash | After: Gemini 3.1 Pro |
-| :--- | :--- | :--- |
-| ![Before](demo/cosplay.jpg) | ![CCD style by Gemini 3 Flash](demo/ccd_style_advanced_info_flash.jpg) | ![CCD style by Gemini 3.1 Pro](demo/ccd_style_advanced_info_pro.jpg) |
+Main comparison:
 
-**Models:** gemini-3-flash-preview, gemini-3.1-pro-preview
+| Baseline | Gemini 3 Flash | Gemini 3.1 Pro | GPT-5.4 Medium |
+| :--- | :--- | :--- | :--- |
+| <a href="demo/cosplay.jpg"><img src="demo/cosplay.jpg" alt="Before" width="240"></a> | <a href="demo/ccd_style_advanced_info_flash.jpg"><img src="demo/ccd_style_advanced_info_flash.jpg" alt="CCD style by Gemini 3 Flash" width="240"></a> | <a href="demo/ccd_style_advanced_info_pro.jpg"><img src="demo/ccd_style_advanced_info_pro.jpg" alt="CCD style by Gemini 3.1 Pro" width="240"></a> | <a href="demo/ccd_style_advanced_info_gpt54_medium.jpg"><img src="demo/ccd_style_advanced_info_gpt54_medium.jpg" alt="CCD style by GPT-5.4 Medium" width="240"></a> |
+
+**Models:** gemini-3-flash-preview, gemini-3.1-pro-preview, gpt-5.4-medium
+
+Mini outlier:
+
+| GPT-5.4 Mini |
+| :--- |
+| <a href="demo/ccd_style_gpt54_mini_medium.jpg"><img src="demo/ccd_style_gpt54_mini_medium.jpg" alt="CCD style by GPT-5.4 Mini" width="240"></a> |
+
+The GPT-5.4 Mini example is separate because the run did not follow the requested crop and ended up with a different aspect ratio.
 
 ## Status
 
