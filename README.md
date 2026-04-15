@@ -6,31 +6,18 @@ The server exposes a session-based editing workflow instead of raw sidecar manip
 
 Each session now also maintains an explicit undo / redo timeline in `session.json`. Semantic edit history is tracked separately from preview-render history.
 
-## Advanced Image Info
-
-This project can attach extra diagnostic output to each preview render:
-
-- `preview_path` remains the primary image for aesthetic judgment.
-- `diagnostic_dashboard_path` adds a separate technical dashboard image.
-- `diagnostic_summary` adds machine-readable stats for exposure, balance, and saturation.
-- Set `DISABLE_ADVANCED_IMAGE_INFO=true` to turn the diagnostics off and keep the original preview-first workflow.
-
-When enabled, the dashboard is meant to complement the clean preview rather than replace it.
-
 ## Examples
-
-Check the [demo/](demo/) directory for full session details, including `session.json`, `PP3` sidecars, and intermediate previews in the `workspace/` folder.
 
 The demo photographs are original work and are not covered by the GPL license. Commercial use is prohibited.
 
 ### Example: Fujifilm Style (v0.2.0)
 
+Compare the baseline image with the two Fujifilm-style outputs below. Each thumbnail links to the full-size file. One with [advanced image info](#advanced-image-info) and the other off.
+
 **Prompt:**
 > Apply a Fujifilm camera like profile to `demo/cosplay.NEF`. Apply a crop to focus on the center but keep the aspect ratio, export the result as `demo/fujifilm_style.jpg`
 
-Compare the baseline image with the two Fujifilm-style outputs below. Each thumbnail links to the full-size file.
-
-| Before | Advanced image info disabled | Advanced image info enabled |
+| Before | Preview only | With diagnostics |
 | :--- | :--- | :--- |
 | <a href="demo/cosplay.jpg"><img src="demo/cosplay.jpg" alt="Before" width="240"></a> | <a href="demo/fujifilm_style_pro.jpg"><img src="demo/fujifilm_style_pro.jpg" alt="After with advanced image info disabled" width="240"></a> | <a href="demo/fujifilm_style_advanced_info_pro.jpg"><img src="demo/fujifilm_style_advanced_info_pro.jpg" alt="After with advanced image info enabled" width="240"></a> |
 
@@ -38,27 +25,18 @@ Compare the baseline image with the two Fujifilm-style outputs below. Each thumb
 
 ### Example: CCD Style (v0.2.0)
 
-This example compares advanced image info-assisted runs using the same source image and prompt style.
-The main table shows the matching-aspect-ratio outputs; the GPT-5.4 Mini result is shown separately because it did not follow the requested crop.
+This example compares [advanced image info](#advanced-image-info)-assisted runs using the same source image, prompt but different models.
 
 **Prompt:**
-> Apply a 200s CCD camera like profile to `demo/cosplay.NEF`. Apply a crop to focus on the center but keep the aspect ratio, export the result as `demo/ccd_style.jpg`
+> Apply a 200s CCD camera like profile to `demo/cosplay.NEF`. Apply a crop to focus on the center but keep the aspect ratio, export the result as [demo/ccd_style_gpt54_mini_medium.jpg](demo/ccd_style_gpt54_mini_medium.jpg)
 
 Main comparison:
 
-| Baseline | Gemini 3 Flash | Gemini 3.1 Pro | GPT-5.4 Medium |
-| :--- | :--- | :--- | :--- |
-| <a href="demo/cosplay.jpg"><img src="demo/cosplay.jpg" alt="Baseline" width="240"></a> | <a href="demo/ccd_style_advanced_info_flash.jpg"><img src="demo/ccd_style_advanced_info_flash.jpg" alt="CCD style by Gemini 3 Flash" width="240"></a> | <a href="demo/ccd_style_advanced_info_pro.jpg"><img src="demo/ccd_style_advanced_info_pro.jpg" alt="CCD style by Gemini 3.1 Pro" width="240"></a> | <a href="demo/ccd_style_advanced_info_gpt54_medium.jpg"><img src="demo/ccd_style_advanced_info_gpt54_medium.jpg" alt="CCD style by GPT-5.4 Medium" width="240"></a> |
+| Baseline | Gemini 3 Flash | Gemini 3.1 Pro | GPT-5.4 Medium | GPT-5.4 Mini |
+| :--- | :--- | :--- | :--- | :--- |
+| <a href="demo/cosplay.jpg"><img src="demo/cosplay.jpg" alt="Baseline" width="240"></a> | <a href="demo/ccd_style_flash.jpg"><img src="demo/ccd_style_flash.jpg" alt="CCD style by Gemini 3 Flash" width="240"></a> | <a href="demo/ccd_style_pro.jpg"><img src="demo/ccd_style_pro.jpg" alt="CCD style by Gemini 3.1 Pro" width="240"></a> | <a href="demo/ccd_style_gpt54_medium.jpg"><img src="demo/ccd_style_gpt54_medium.jpg" alt="CCD style by GPT-5.4 Medium" width="240"></a> | <a href="demo/ccd_style_gpt54_mini_medium.jpg"><img src="demo/ccd_style_gpt54_mini_medium.jpg" alt="CCD style by GPT-5.4 Mini" width="240"></a> |
 
-**Models:** gemini-3-flash-preview, gemini-3.1-pro-preview, gpt-5.4-medium
-
-Mini outlier:
-
-| GPT-5.4 Mini |
-| :--- |
-| <a href="demo/ccd_style_gpt54_mini_medium.jpg"><img src="demo/ccd_style_gpt54_mini_medium.jpg" alt="CCD style by GPT-5.4 Mini" width="240"></a> |
-
-The GPT-5.4 Mini example is separate because the run did not follow the requested crop and ended up with a different aspect ratio.
+**Models:** gemini-3-flash-preview, gemini-3.1-pro-preview, gpt-5.4 (medium), gpt-5.4-mini (medium)
 
 ## Status
 
@@ -78,8 +56,6 @@ Not in scope:
 - full photo-editor feature coverage
 - large preset libraries
 - batch editing UX
-
-For a repeatable enabled-vs-disabled review of advanced image info, see [plans/milestone-5-outcome-review.md](plans/milestone-5-outcome-review.md).
 
 ## Requirements
 
@@ -237,6 +213,16 @@ RAW support depends on the local RawTherapee build and its bundled RAW decoders.
 
 **Note on Nikon RAW:** Some compressed Nikon RAW formats (e.g., High Efficiency / HE* compression) may not be supported by the underlying libraries in current RawTherapee builds. If you encounter issues with Nikon files, try using uncompressed RAW or Lossless Compressed modes if available in-camera.
 
+## Advanced Image Info
+
+This project can attach extra diagnostic output to each preview render:
+
+- `preview_path` remains the primary image for aesthetic judgment.
+- `diagnostic_dashboard_path` adds a separate technical dashboard image.
+- `diagnostic_summary` adds machine-readable stats for exposure, balance, and saturation.
+- Set `DISABLE_ADVANCED_IMAGE_INFO=true` to turn the diagnostics off and keep the original preview-first workflow.
+
+When enabled, the dashboard is meant to complement the clean preview rather than replace it.
 
 ## Available Tools
 
