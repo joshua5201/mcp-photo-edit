@@ -52,6 +52,9 @@ class SessionManager:
                     f"Unsupported backend '{configured_backend}'.",
                     hint=f"Use one of: {supported}.",
                 )
+        self.advanced_image_info_enabled = not _env_flag_enabled(
+            os.environ.get("DISABLE_ADVANCED_IMAGE_INFO")
+        )
         self.workspace_root.mkdir(parents=True, exist_ok=True)
 
     def create_session(
@@ -101,6 +104,7 @@ class SessionManager:
         if not manifest_path.exists():
             raise SessionNotFoundError(session_id)
         session = SessionState.model_validate_json(manifest_path.read_text(encoding="utf-8"))
+        self._apply_advanced_image_info_gate(session)
         return session
 
     def apply_adjustments(
@@ -305,6 +309,13 @@ class SessionManager:
             session.source.width, session.source.height = rendered_size
         session.last_rendered_at = utc_now()
 
+    def _apply_advanced_image_info_gate(self, session: SessionState) -> None:
+        """Keep advanced image info stable when the feature is disabled."""
+
+        if not self.advanced_image_info_enabled:
+            session.diagnostic_dashboard_path = None
+            session.diagnostic_summary = None
+
     def _state_path(self, session: SessionState) -> Path:
         if not session.state_path:
             raise ValidationError(
@@ -389,8 +400,17 @@ class SessionManager:
         session.touch()
 
     def _save_session(self, session: SessionState) -> None:
+        self._apply_advanced_image_info_gate(session)
         manifest_path = self._manifest_path(session.session_id)
         manifest_path.write_text(
             session.model_dump_json(indent=2),
             encoding="utf-8",
         )
+
+
+def _env_flag_enabled(value: str | None) -> bool:
+    """Interpret a boolean environment flag with stable defaults."""
+
+    if value is None:
+        return False
+    return value.strip().lower() in {"1", "true", "yes", "on"}

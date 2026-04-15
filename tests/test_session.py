@@ -166,6 +166,34 @@ def test_render_preview_appends_preview_history_without_semantic_history(tmp_pat
     assert session.history[0].preview_path == str(second_preview)
 
 
+def test_disabled_advanced_image_info_keeps_preview_flow_and_null_fields(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source = tmp_path / "source.ppm"
+    source.write_text("P3\n1 1\n255\n255 0 0\n", encoding="utf-8")
+    backend = DummyBackend()
+    monkeypatch.setenv("DISABLE_ADVANCED_IMAGE_INFO", "true")
+    manager = SessionManager(workspace_root=tmp_path / "workspace", backend=backend)
+
+    assert manager.advanced_image_info_enabled is False
+
+    session = manager.create_session(str(source))
+    first_preview = Path(session.preview_path)
+    assert first_preview.exists()
+    assert session.diagnostic_dashboard_path is None
+    assert session.diagnostic_summary is None
+
+    session = manager.render_preview(session.session_id)
+    second_preview = Path(session.preview_path)
+
+    assert second_preview.name == "preview-0002.jpg"
+    assert second_preview.exists()
+    assert len(session.preview_history) == 2
+    assert session.diagnostic_dashboard_path is None
+    assert session.diagnostic_summary is None
+
+
 def test_undo_and_redo_move_cursor_without_creating_new_steps(tmp_path: Path) -> None:
     source = tmp_path / "source.ppm"
     source.write_text("P3\n1 1\n255\n255 0 0\n", encoding="utf-8")

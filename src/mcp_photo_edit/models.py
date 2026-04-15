@@ -398,6 +398,8 @@ class SessionState(BaseModel):
     state_path: str | None = None
     xmp_path: str | None = None
     preview_path: str
+    diagnostic_dashboard_path: str | None = None
+    diagnostic_summary: dict[str, Any] | None = None
     preview_max_size: int = Field(default=1024, ge=64, le=4096)
     preview_history: list[PreviewArtifact] = Field(default_factory=list)
     adjustments: AdjustmentState = Field(default_factory=AdjustmentState)
@@ -477,6 +479,8 @@ class PreviewResult(BaseModel):
     ok: bool = True
     session_id: str | None = None
     preview_path: str | None = None
+    diagnostic_dashboard_path: str | None = None
+    diagnostic_summary: dict[str, Any] | None = None
     preview_count: int | None = None
     preview_history: list[PreviewArtifact] = Field(default_factory=list)
     history_index: int | None = None
