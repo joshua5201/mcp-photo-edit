@@ -9,20 +9,19 @@ from pathlib import Path
 from pydantic import ValidationError as PydanticValidationError
 
 from .errors import SessionNotFoundError, ValidationError
+from .interfaces import SessionRenderBackend
 from .models import (
     ADJUSTMENT_SPECS,
     RESETTABLE_FIELDS,
     AdjustmentPatch,
     AdjustmentSpec,
     AdjustmentState,
-    DiagnosticSummary,
     HistoryStep,
     PreviewArtifact,
     SessionState,
     SourceImageInfo,
     utc_now,
 )
-from .render import AdvancedImageInfoRenderer, RenderBackend, build_backend_registry, normalize_backend_name
 
 
 class SessionManager:
@@ -31,32 +30,22 @@ class SessionManager:
     def __init__(
         self,
         workspace_root: Path | None = None,
-        backend: RenderBackend | None = None,
+        backend: SessionRenderBackend | None = None,
     ) -> None:
         configured_workdir = os.environ.get("MCP_PHOTO_EDIT_WORKDIR") or os.environ.get(
             "MCP_DARKTABLE_WORKDIR"
         )
         default_root = Path(configured_workdir or ".mcp-photo-edit")
         self.workspace_root = (workspace_root or default_root).resolve()
-        if backend is not None:
-            self.backends = {backend.backend_id: backend}
-            self.default_backend_id = backend.backend_id
-        else:
-            self.backends = build_backend_registry()
-            configured_backend = os.environ.get("MCP_PHOTO_EDIT_BACKEND") or os.environ.get(
-                "MCP_DARKTABLE_BACKEND", "rawtherapee-cli"
-            )
-            self.default_backend_id = normalize_backend_name(configured_backend)
-            if self.default_backend_id not in self.backends:
-                supported = ", ".join(sorted(self.backends))
-                raise ValidationError(
-                    f"Unsupported backend '{configured_backend}'.",
-                    hint=f"Use one of: {supported}.",
-                )
+        if backend is None:
+            from .backend import ServiceRenderBackend
+
+            backend = ServiceRenderBackend()
+        self.backends: dict[str, SessionRenderBackend] = {backend.backend_id: backend}
+        self.default_backend_id = backend.backend_id
         self.advanced_image_info_enabled = not _env_flag_enabled(
             os.environ.get("DISABLE_ADVANCED_IMAGE_INFO")
         )
-        self._advanced_image_info_renderer = AdvancedImageInfoRenderer()
         self.workspace_root.mkdir(parents=True, exist_ok=True)
 
     def create_session(
@@ -325,23 +314,17 @@ class SessionManager:
             session.current_step.diagnostic_summary = None
             return
 
-        dashboard_path = Path(session.workspace_dir) / self._diagnostic_filename(sequence)
+        backend = self._backend_for_session(session)
         try:
-            diagnostic_summary: DiagnosticSummary = self._advanced_image_info_renderer.render(
-                preview_path,
-                dashboard_path,
-            )
-        except Exception:  # noqa: BLE001 - fail open so preview rendering still succeeds
-            session.diagnostic_dashboard_path = None
-            session.diagnostic_summary = None
-            session.current_step.diagnostic_dashboard_path = None
-            session.current_step.diagnostic_summary = None
-            return
-
-        session.diagnostic_dashboard_path = str(dashboard_path)
+            diagnostic_summary = backend.diagnostics_for(preview_path)
+        except Exception:
+            diagnostic_summary = None
+        session.diagnostic_dashboard_path = None
         session.diagnostic_summary = diagnostic_summary
-        session.current_step.diagnostic_dashboard_path = str(dashboard_path)
-        session.current_step.diagnostic_summary = diagnostic_summary.model_copy(deep=True)
+        session.current_step.diagnostic_dashboard_path = None
+        session.current_step.diagnostic_summary = (
+            diagnostic_summary.model_copy(deep=True) if diagnostic_summary is not None else None
+        )
 
     def _apply_advanced_image_info_gate(self, session: SessionState) -> None:
         """Keep advanced image info stable when the feature is disabled."""
@@ -361,8 +344,12 @@ class SessionManager:
             )
         return Path(session.state_path)
 
-    def _backend_for_session(self, session: SessionState) -> RenderBackend:
+    def _backend_for_session(self, session: SessionState) -> SessionRenderBackend:
         backend = self.backends.get(session.backend)
+        if backend is None and session.backend == "rawtherapee-cli":
+            backend = self.backends.get(self.default_backend_id)
+            if backend is not None:
+                session.backend = backend.backend_id
         if backend is None:
             supported = ", ".join(sorted(self.backends))
             raise ValidationError(
@@ -374,11 +361,9 @@ class SessionManager:
     def _preview_filename(self, sequence: int) -> str:
         return f"preview-{sequence:04d}.jpg"
 
-    def _diagnostic_filename(self, sequence: int) -> str:
-        return f"dashboard-{sequence:04d}.png"
-
     def _history_state_path(self, session_dir: Path, sequence: int) -> Path:
-        return session_dir / "history" / f"step-{sequence:04d}.pp3"
+        suffix = Path(self.backends[self.default_backend_id].state_file_name).suffix
+        return session_dir / "history" / f"step-{sequence:04d}{suffix}"
 
     def _next_step_id(self, sequence: int) -> str:
         return f"{sequence + 1:04d}"

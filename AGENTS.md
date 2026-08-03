@@ -7,7 +7,7 @@ This file is a fast handoff for future work on `mcp-photo-edit`.
 - MCP server for agent-driven photo editing
 - Public package / module: `mcp_photo_edit`
 - Public CLI entrypoint: `mcp-photo-edit`
-- Current supported backend: RawTherapee via `rawtherapee-cli`
+- Current backend: `LocalFileBackend` calling `raw-edit-service` in-process
 - Repo also ships a reusable skill at `skills/mcp-photo-edit`
 
 ## Backend Status
@@ -56,15 +56,15 @@ Sessions are stateful and workspace-backed. The public API is adjustment-based, 
 ## Key Implementation Files
 
 - `src/mcp_photo_edit/server.py`: FastMCP tool registration
+- `src/mcp_photo_edit/backend.py`: LocalFileBackend and service adapter
+- `src/mcp_photo_edit/interfaces.py`: typed EditBackend contracts
 - `src/mcp_photo_edit/session.py`: session lifecycle and persistence
-- `src/mcp_photo_edit/render.py`: backend integrations
-- `src/mcp_photo_edit/pp3.py`: RawTherapee `PP3` generation
 - `src/mcp_photo_edit/models.py`: schemas and validation
 
 ## Important Implementation Notes
 
-- Sessions persist a backend-native `state_path`.
-- RawTherapee sessions write `session.pp3`.
+- Sessions persist an internal renderer-neutral `state_path`.
+- RawTherapee implementation details belong to `raw-edit-service`.
 - Preview rendering and final export are separate operations.
 - Crop math must use the full developed image dimensions as the canonical base, not the dimensions of an already-cropped preview.
 - `exiftool` is used when available as a metadata fallback, but the authoritative geometry base should come from real rendered dimensions when needed.
@@ -88,7 +88,7 @@ These fallbacks are compatibility-only. Avoid introducing new docs or features a
 Install dev dependencies:
 
 ```bash
-uv sync --extra dev
+uv sync
 ```
 
 Run tests:

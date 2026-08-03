@@ -57,7 +57,7 @@ def test_adjustment_patch_supports_new_rawtherapee_fields() -> None:
             green_balance=1.03,
             highlights=15.0,
             shadows=22.0,
-            sharpen_amount=180.0,
+            sharpen_amount=180,
             sharpen_radius=0.8,
             sharpen_contrast=28.0,
         )
@@ -98,7 +98,7 @@ def test_sharpening_fields_validate_ranges() -> None:
         AdjustmentPatch(sharpen_radius=0.2)
 
     with pytest.raises(ValidationError):
-        AdjustmentPatch(sharpen_amount=0.5)
+        AdjustmentPatch.model_validate({"sharpen_amount": 0.5})
 
 
 def test_session_and_preview_models_include_nullable_advanced_image_info_fields() -> None:

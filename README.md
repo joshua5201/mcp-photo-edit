@@ -1,8 +1,12 @@
 # mcp-photo-edit
 
-An MCP server for agent-driven photo editing with RawTherapee.
+An MCP server for agent-driven photo editing through a typed `EditBackend` boundary.
 
-The server exposes a session-based editing workflow instead of raw sidecar manipulation. Agents create an edit session, apply structured adjustments, regenerate previews when needed, and export a final image. Internally the server writes session-owned RawTherapee `PP3` files and renders them through `rawtherapee-cli`.
+The server exposes a session-based editing workflow instead of raw sidecar manipulation.
+Agents create an edit session, apply structured adjustments, regenerate previews when
+needed, and export a final image. The default `LocalFileBackend` calls
+`raw-edit-service` in-process using models from `raw-edit-contracts`; MCP contains no
+RawTherapee profile generation or process-control implementation.
 
 Each session now also maintains an explicit undo / redo timeline in `session.json`. Semantic edit history is tracked separately from preview-render history.
 
@@ -77,7 +81,7 @@ uv sync
 For development, include the optional test dependency:
 
 ```bash
-uv sync --extra dev
+uv sync
 ```
 
 Verify `rawtherapee-cli`:
@@ -101,13 +105,12 @@ args = ["run", "mcp-photo-edit"]
 
 [mcp_servers.photo_edit.env]
 MCP_PHOTO_EDIT_WORKDIR = "/absolute/path/to/.mcp-photo-edit"
-MCP_PHOTO_EDIT_BACKEND = "rawtherapee-cli"
 ```
 
 If you prefer to add it from the CLI instead of editing TOML manually:
 
 ```bash
-codex mcp add photo-edit --env MCP_PHOTO_EDIT_WORKDIR=/absolute/path/to/.mcp-photo-edit --env MCP_PHOTO_EDIT_BACKEND=rawtherapee-cli -- uv run mcp-photo-edit
+codex mcp add photo-edit --env MCP_PHOTO_EDIT_WORKDIR=/absolute/path/to/.mcp-photo-edit -- uv run mcp-photo-edit
 ```
 
 Verify the server is registered:
@@ -157,8 +160,7 @@ Add this block:
       "command": "uv",
       "args": ["run", "mcp-photo-edit"],
       "env": {
-        "MCP_PHOTO_EDIT_WORKDIR": "/absolute/path/to/.mcp-photo-edit",
-        "MCP_PHOTO_EDIT_BACKEND": "rawtherapee-cli"
+        "MCP_PHOTO_EDIT_WORKDIR": "/absolute/path/to/.mcp-photo-edit"
       },
       "timeout": 30000,
       "trust": true
@@ -170,7 +172,7 @@ Add this block:
 Or add it from the CLI. This example writes to user config instead of project-local config:
 
 ```bash
-gemini mcp add --scope user --transport stdio --env MCP_PHOTO_EDIT_WORKDIR=/absolute/path/to/.mcp-photo-edit --env MCP_PHOTO_EDIT_BACKEND=rawtherapee-cli --timeout 30000 --trust photo-edit uv run mcp-photo-edit
+gemini mcp add --scope user --transport stdio --env MCP_PHOTO_EDIT_WORKDIR=/absolute/path/to/.mcp-photo-edit --timeout 30000 --trust photo-edit uv run mcp-photo-edit
 ```
 
 If you omit `--scope user`, Gemini CLI writes the MCP entry to project-local config by default.
@@ -215,14 +217,11 @@ RAW support depends on the local RawTherapee build and its bundled RAW decoders.
 
 ## Advanced Image Info
 
-This project can attach extra diagnostic output to each preview render:
+The typed render service can attach structured diagnostics to each preview:
 
 - `preview_path` remains the primary image for aesthetic judgment.
-- `diagnostic_dashboard_path` adds a separate technical dashboard image.
 - `diagnostic_summary` adds machine-readable stats for exposure, balance, and saturation.
 - Set `DISABLE_ADVANCED_IMAGE_INFO=true` to turn the diagnostics off and keep the original preview-first workflow.
-
-When enabled, the dashboard is meant to complement the clean preview rather than replace it.
 
 ## Available Tools
 
@@ -275,17 +274,15 @@ Current default-backend MVP adjustments:
 
 Use `list_supported_adjustments` to discover exact ranges, defaults, and example payloads at runtime.
 
-Backend note:
-
-- the current implementation targets RawTherapee `PP3`
-- `list_supported_adjustments` is the source of truth for runtime support
+Backend note: `list_supported_adjustments` is the source of truth for the injected
+service's runtime capabilities.
 
 ## Session History
 
 - `session.json` is the authoritative session timeline.
 - `history` stores committed semantic edit steps.
 - `history_index` points to the current step.
-- `session.pp3` is the current materialized backend state.
+- `state.json` is the current renderer-neutral service request state.
 - `render_preview` appends preview artifacts but does not append semantic edit history.
 - Applying a new edit after undo truncates the redo tail.
 
@@ -293,10 +290,10 @@ Backend note:
 
 ```text
 src/mcp_photo_edit/
+  interfaces.py    EditBackend and internal adapter protocols
+  backend.py       LocalFileBackend and in-process service adapter
   models.py        Pydantic schemas and validation
   session.py       Session lifecycle and persistence
-  pp3.py           Adjustment to RawTherapee PP3 translation
-  render.py        Backend integrations
   server.py        MCP tool registration
 tests/
 skills/

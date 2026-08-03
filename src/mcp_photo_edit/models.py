@@ -6,12 +6,30 @@ import shutil
 import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Literal
+from typing import Literal, TypedDict
 
-from pydantic import BaseModel, Field, computed_field, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    Field,
+    JsonValue,
+    computed_field,
+    field_validator,
+    model_validator,
+)
 
 
-ADJUSTMENT_SPECS: dict[str, dict[str, Any]] = {
+class AdjustmentSpecData(TypedDict):
+    """Typed source data for discoverable adjustment metadata."""
+
+    minimum: float | int | None
+    maximum: float | int | None
+    default: float | int | None
+    unit: str
+    description: str
+    example: JsonValue
+
+
+ADJUSTMENT_SPECS: dict[str, AdjustmentSpecData] = {
     "exposure": {
         "minimum": -5.0,
         "maximum": 5.0,
@@ -138,7 +156,7 @@ ADJUSTMENT_SPECS: dict[str, dict[str, Any]] = {
     },
 }
 
-RESETTABLE_FIELDS = tuple(ADJUSTMENT_SPECS.keys()) + ("crop",)
+RESETTABLE_FIELDS = (*tuple(ADJUSTMENT_SPECS.keys()), "crop")
 
 
 def utc_now() -> datetime:
@@ -164,7 +182,7 @@ class CropAdjustment(BaseModel):
     bottom: float = Field(ge=0.0, le=1.0)
 
     @model_validator(mode="after")
-    def validate_bounds(self) -> "CropAdjustment":
+    def validate_bounds(self) -> CropAdjustment:
         """Require a positive crop area."""
 
         if self.left >= self.right:
@@ -230,19 +248,27 @@ class AdjustmentState(BaseModel):
             raise ValueError("orientation must be one of -90, 0, 90, 180")
         return value
 
-    def apply_patch(self, patch: "AdjustmentPatch") -> "AdjustmentState":
+    def apply_patch(self, patch: AdjustmentPatch) -> AdjustmentState:
         """Return a new state with only provided fields updated."""
 
         data = self.model_dump()
         patch_data = patch.model_dump(exclude_unset=True)
-        if "color_temperature" in patch_data and "green_balance" not in patch_data and data["green_balance"] is None:
+        if (
+            "color_temperature" in patch_data
+            and "green_balance" not in patch_data
+            and data["green_balance"] is None
+        ):
             data["green_balance"] = 1.0
-        if "green_balance" in patch_data and "color_temperature" not in patch_data and data["color_temperature"] is None:
+        if (
+            "green_balance" in patch_data
+            and "color_temperature" not in patch_data
+            and data["color_temperature"] is None
+        ):
             data["color_temperature"] = 6504.0
         data.update(patch_data)
         return AdjustmentState.model_validate(data)
 
-    def reset_fields(self, fields: list[str] | None = None) -> "AdjustmentState":
+    def reset_fields(self, fields: list[str] | None = None) -> AdjustmentState:
         """Return a new state with selected fields reset to defaults."""
 
         if not fields:
@@ -294,7 +320,7 @@ class AdjustmentSpec(BaseModel):
     default: float | int | None
     unit: str
     description: str
-    example: Any
+    example: JsonValue
 
 
 class SourceImageInfo(BaseModel):
@@ -307,7 +333,7 @@ class SourceImageInfo(BaseModel):
     height: int | None = None
 
     @classmethod
-    def from_path(cls, input_path: Path) -> "SourceImageInfo":
+    def from_path(cls, input_path: Path) -> SourceImageInfo:
         """Build image info from a resolved path."""
 
         width: int | None = None
@@ -467,7 +493,7 @@ class SessionState(BaseModel):
         return str(value)
 
     @model_validator(mode="after")
-    def validate_history(self) -> "SessionState":
+    def validate_history(self) -> SessionState:
         """Normalize state and ensure the history cursor is valid."""
 
         if self.state_path is None and self.xmp_path is not None:

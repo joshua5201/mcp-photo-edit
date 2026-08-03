@@ -1,3 +1,4 @@
+# pyright: reportUnusedFunction=false
 """FastMCP server registration."""
 
 from __future__ import annotations
@@ -7,7 +8,9 @@ from typing import TypeVar
 from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel
 
+from .backend import LocalFileBackend
 from .errors import PhotoEditError
+from .interfaces import EditBackend
 from .models import (
     AdjustmentPatch,
     ErrorInfo,
@@ -16,15 +19,14 @@ from .models import (
     SessionEnvelope,
     SupportedAdjustmentsResult,
 )
-from .session import SessionManager
 
 SessionResultT = TypeVar("SessionResultT", bound=BaseModel)
 
 
-def create_server() -> FastMCP:
+def create_server(backend: EditBackend | None = None) -> FastMCP:
     """Create the FastMCP server instance."""
 
-    session_manager = SessionManager()
+    edit_backend = backend or LocalFileBackend()
     mcp = FastMCP(
         "mcp-photo-edit",
         instructions=(
@@ -42,7 +44,7 @@ def create_server() -> FastMCP:
         """Create an edit session from an input image path."""
 
         try:
-            session = session_manager.create_session(
+            session = edit_backend.create_session(
                 input_path,
                 preview_max_size=preview_max_size,
                 session_label=session_label,
@@ -56,7 +58,7 @@ def create_server() -> FastMCP:
         """Fetch the current state for an existing session."""
 
         try:
-            return SessionEnvelope(session=session_manager.get_session(session_id))
+            return SessionEnvelope(session=edit_backend.get_session(session_id))
         except PhotoEditError as exc:
             return _session_error(exc)
 
@@ -68,7 +70,7 @@ def create_server() -> FastMCP:
         """Explicitly (re)render the current session preview."""
 
         try:
-            session = session_manager.render_preview(
+            session = edit_backend.render_preview(
                 session_id,
                 preview_max_size=preview_max_size,
             )
@@ -97,7 +99,7 @@ def create_server() -> FastMCP:
         """Apply a partial adjustment patch to a session."""
 
         try:
-            session = session_manager.apply_adjustments(
+            session = edit_backend.apply_adjustments(
                 session_id,
                 adjustments,
                 render_preview=render_preview,
@@ -115,7 +117,7 @@ def create_server() -> FastMCP:
         """Reset all or selected adjustment keys back to defaults."""
 
         try:
-            session = session_manager.reset_adjustments(
+            session = edit_backend.reset_adjustments(
                 session_id,
                 fields,
                 render_preview=render_preview,
@@ -129,8 +131,8 @@ def create_server() -> FastMCP:
         """Export the current session state to a final output path."""
 
         try:
-            session = session_manager.get_session(session_id)
-            output = session_manager.export_image(session_id, output_path)
+            session = edit_backend.get_session(session_id)
+            output = edit_backend.export_image(session_id, output_path)
             return ExportResult(
                 session_id=session_id,
                 output_path=str(output),
@@ -148,7 +150,7 @@ def create_server() -> FastMCP:
         """Move the current session to the previous committed adjustment state."""
 
         try:
-            session = session_manager.undo_adjustment(
+            session = edit_backend.undo_adjustment(
                 session_id,
                 render_preview=render_preview,
             )
@@ -164,7 +166,7 @@ def create_server() -> FastMCP:
         """Move the current session to the next committed adjustment state."""
 
         try:
-            session = session_manager.redo_adjustment(
+            session = edit_backend.redo_adjustment(
                 session_id,
                 render_preview=render_preview,
             )
@@ -176,9 +178,7 @@ def create_server() -> FastMCP:
     def list_supported_adjustments() -> SupportedAdjustmentsResult:
         """List supported adjustments, ranges, defaults, and examples."""
 
-        return SupportedAdjustmentsResult(
-            adjustments=session_manager.list_supported_adjustments()
-        )
+        return SupportedAdjustmentsResult(adjustments=edit_backend.list_supported_adjustments())
 
     return mcp
 

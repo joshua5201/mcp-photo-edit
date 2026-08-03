@@ -22,7 +22,7 @@ Use this skill when an agent should adjust, edit, modify, retouch lightly, enhan
 ## Recommended Workflow
 
 1. Call `create_edit_session` with the image path.
-2. Inspect the returned `preview_path`. If `diagnostic_dashboard_path` or `diagnostic_summary` is present, you must check and use them, along with the current adjustment state, `preview_count`, and history cursor fields such as `history_index`, `history_length`, `can_undo`, and `can_redo`.
+2. Inspect the returned `preview_path`. If `diagnostic_summary` is present, check and use it along with the current adjustment state, `preview_count`, and history cursor fields such as `history_index`, `history_length`, `can_undo`, and `can_redo`.
 3. Use `list_supported_adjustments` if ranges or semantics are unclear.
 4. Apply small patches with `apply_adjustments`.
 5. Use `undo_adjustment` or `redo_adjustment` to move across committed edit steps when needed.
@@ -33,10 +33,9 @@ Use this skill when an agent should adjust, edit, modify, retouch lightly, enhan
 ## Advanced Image Info
 
 - Use `preview_path` for aesthetic intent and overall image judgment.
-- Use `diagnostic_dashboard_path` for quick technical pattern reading, especially clipping, balance, and saturation distribution.
 - Use `diagnostic_summary` for exact numeric facts when deciding whether exposure, white balance, or saturation still needs adjustment.
 - Use the current adjustment state for continuity, so each patch builds on the session's actual edit history instead of re-inferencing from scratch.
-- When dashboard and preview disagree, favor the preview for aesthetic intent and the summary JSON for hard facts.
+- When diagnostics and preview disagree, favor the preview for aesthetic intent and the summary JSON for hard facts.
 - When advanced image info is disabled or absent, stay preview-first and continue using the current adjustment state and history as the source of continuity.
 
 ## Editing Order

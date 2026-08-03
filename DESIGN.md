@@ -2,7 +2,11 @@
 
 ## Summary
 
-`mcp-photo-edit` is an MCP server for agent-driven photo editing. The public contract is a stable, structured edit schema and a session-based workflow. Internally the server maps that schema into RawTherapee `PP3` state and renders previews / exports through `rawtherapee-cli`.
+`mcp-photo-edit` is an MCP server for agent-driven photo editing. Its transport depends
+on the typed `EditBackend` use-case interface. The default `LocalFileBackend` owns
+session persistence and calls `raw-edit-service` in-process using
+`raw-edit-contracts`; renderer-specific profile generation and process control do not
+live in this repository.
 
 Current backend policy:
 
@@ -56,7 +60,7 @@ The design is intentionally opinionated around agent ergonomics:
 ## User Workflow
 
 1. Create an edit session from an input image path.
-2. Generate a canonical `session.pp3` and an initial preview artifact.
+2. Persist renderer-neutral session state and request an initial preview artifact.
 3. Inspect current edit state, preview path, preview count, and history cursor state.
 4. Apply structured adjustments.
 5. Move backward or forward with undo / redo when needed.
@@ -107,7 +111,8 @@ Returns the current state of an existing session.
 
 ### `apply_adjustments`
 
-Applies a partial adjustment patch to a session, validates it, writes the current `PP3`, and optionally re-renders the preview.
+Applies a partial adjustment patch to a session, validates it, writes the current
+renderer-neutral state snapshot, and optionally requests a fresh preview.
 
 ### `reset_adjustments`
 
@@ -163,7 +168,9 @@ Rules:
 
 Current implementation note:
 
-The adapter writes native RawTherapee `PP3` settings. The current MVP exposes core tone controls, channel mixing, denoise, manual white balance, highlight / shadow recovery, and main sharpening. Broader support such as vibrance or continuous rotation can be added later without changing the session workflow.
+The MCP adapter sends typed document state to `raw-edit-service`. The current MVP
+exposes core tone controls, channel mixing, denoise, manual white balance, highlight /
+shadow recovery, and sharpening. Engine-specific translation stays in the service.
 
 ## Architecture
 
@@ -180,16 +187,17 @@ The adapter writes native RawTherapee `PP3` settings. The current MVP exposes co
 - validation
 - merge and reset behavior
 
-### Backend State Adapter Layer
+### Local Backend Adapter Layer
 
-- converts the domain schema into backend-native `PP3`
-- keeps sidecar details out of the public API
+- persists renderer-neutral session snapshots
+- converts MCP session operations into `raw-edit-contracts` render requests
+- calls `raw-edit-service` in-process
 
-### Render Backend Layer
+### RAW Edit Service Layer
 
-- executes `rawtherapee-cli`
-- normalizes preview/export output locations
-- isolates backend-specific behavior and errors
+- owns RawTherapee profile generation and process execution
+- returns revision-bound artifacts, diagnostics, and structured errors
+- remains replaceable by a future service implementation
 
 ## Filesystem And Session Model
 
@@ -198,8 +206,8 @@ Each session has a managed workspace under the configured runtime root.
 Session artifacts:
 
 - `session.json`
-- `session.pp3`
-- `history/step-0001.pp3`, `history/step-0002.pp3`, ...
+- `state.json`
+- `history/step-0001.json`, `history/step-0002.json`, ...
 - `preview-0001.jpg`, `preview-0002.jpg`, ...
 - temporary render outputs
 
@@ -208,8 +216,8 @@ Rules:
 - source images are never modified
 - `session.json` is the authoritative edit-history timeline
 - `history_index` identifies the current semantic edit step
-- `session.pp3` is the current materialized backend state
-- immutable per-step `PP3` snapshots are preserved under `history/`
+- `state.json` is the current renderer-neutral request state
+- immutable per-step state snapshots are preserved under `history/`
 - previews are preserved as render-history artifacts
 - preview history is separate from semantic edit history
 - exports are explicit user-requested outputs

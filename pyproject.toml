@@ -4,20 +4,24 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mcp-photo-edit"
-version = "0.2.2"
-description = "MCP server for session-based photo editing with pluggable RAW backends"
+version = "0.3.0"
+description = "MCP orchestration for session-based RAW editing through typed backends"
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.12"
 dependencies = [
   "mcp[cli]>=1.0,<2",
-  "Pillow>=10,<12",
   "pydantic>=2.7,<3",
+  "raw-edit-contracts>=0.1,<0.2",
+  "raw-edit-service>=0.1,<0.2",
 ]
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
-  "pytest>=8.0,<9",
+  "basedpyright>=1.31,<2",
+  "build>=1.2,<2",
+  "pytest>=8,<10",
+  "ruff>=0.12,<1",
 ]
 
 [project.scripts]
@@ -29,3 +33,16 @@ packages = ["src/mcp_photo_edit"]
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "UP", "B", "SIM", "RUF"]
+
+[tool.basedpyright]
+pythonVersion = "3.12"
+typeCheckingMode = "strict"
+include = ["src", "tests"]
+exclude = ["dist", "build"]

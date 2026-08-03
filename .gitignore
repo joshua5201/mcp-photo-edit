@@ -2,7 +2,11 @@
 .mcp-darktable/
 .pip-deps/
 .pytest_cache/
+.ruff_cache/
+.basedpyright/
 .venv/
+build/
+dist/
 .testdata
 .gemini
 __pycache__/
