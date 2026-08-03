@@ -25,6 +25,13 @@ jobs:
       - name: Build package
         run: python -m build
 
+      - name: Verify standalone wheel installation
+        run: |
+          python -m venv wheel-test
+          wheel-test/bin/python -m pip install dist/*.whl
+          wheel-test/bin/python -m pip check
+          wheel-test/bin/python -c "from mcp_photo_edit.server import create_server; create_server()"
+
       - name: Upload distributions
         uses: actions/upload-artifact@v4
         with:

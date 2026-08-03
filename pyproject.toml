@@ -16,6 +16,11 @@ dependencies = [
   "raw-edit-service>=0.1,<0.2",
 ]
 
+[project.urls]
+Homepage = "https://github.com/joshua5201/mcp-photo-edit"
+Repository = "https://github.com/joshua5201/mcp-photo-edit"
+Issues = "https://github.com/joshua5201/mcp-photo-edit/issues"
+
 [dependency-groups]
 dev = [
   "basedpyright>=1.31,<2",

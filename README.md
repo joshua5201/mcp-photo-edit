@@ -1,12 +1,11 @@
 # mcp-photo-edit
 
-An MCP server for agent-driven photo editing through a typed `EditBackend` boundary.
+An installable MCP server for agent-driven photo editing with RawTherapee.
 
 The server exposes a session-based editing workflow instead of raw sidecar manipulation.
 Agents create an edit session, apply structured adjustments, regenerate previews when
-needed, and export a final image. The default `LocalFileBackend` calls
-`raw-edit-service` in-process using models from `raw-edit-contracts`; MCP contains no
-RawTherapee profile generation or process-control implementation.
+needed, and export a final image. Installing `mcp-photo-edit` installs all Python runtime
+dependencies automatically; users only need Python, an MCP client, and RawTherapee.
 
 Each session now also maintains an explicit undo / redo timeline in `session.json`. Semantic edit history is tracked separately from preview-render history.
 
@@ -64,33 +63,52 @@ Not in scope:
 ## Requirements
 
 - Python 3.12+
-- `uv` for the easiest local install and run workflow
-- `rawtherapee-cli` on `PATH`
+- `uv` for the easiest install and run workflow, or `pipx`
+- RawTherapee with `rawtherapee-cli` available on `PATH`, or an absolute executable
+  path set in `RAWTHERAPEE_CLI`
 
 ### Tested Environment
 
-- **OS:** Ubuntu 24.04 LTS
-- **RawTherapee:** v5.10 (CLI)
+- **OS:** Windows 11 and Ubuntu 24.04 LTS
+- **RawTherapee:** v5.12 on Windows; v5.10 on Ubuntu
 
-Install the project with `uv`:
+Verify RawTherapee:
 
-```bash
-uv sync
-```
-
-For development, include the optional test dependency:
-
-```bash
-uv sync
-```
-
-Verify `rawtherapee-cli`:
-
-```bash
+```shell
 rawtherapee-cli -v
 ```
 
-## Quickstart
+On Windows, if RawTherapee is installed but its directory is not on `PATH`, set the
+absolute executable path before starting the MCP client:
+
+```powershell
+$env:RAWTHERAPEE_CLI = "C:\Program Files\RawTherapee\5.12\rawtherapee-cli.exe"
+```
+
+## Install
+
+Run the published package without cloning this repository:
+
+```shell
+uvx mcp-photo-edit
+```
+
+`uvx` creates and caches an isolated environment. All Python dependencies are resolved
+from the package metadata. To install the command persistently instead:
+
+```shell
+uv tool install mcp-photo-edit
+```
+
+Or use `pipx`:
+
+```shell
+pipx install mcp-photo-edit
+```
+
+After a persistent install, the executable is simply `mcp-photo-edit`.
+
+## MCP Quickstart
 
 Example stdio configurations
 
@@ -100,8 +118,8 @@ Add this block:
 
 ```toml
 [mcp_servers.photo_edit]
-command = "uv"
-args = ["run", "mcp-photo-edit"]
+command = "uvx"
+args = ["mcp-photo-edit"]
 
 [mcp_servers.photo_edit.env]
 MCP_PHOTO_EDIT_WORKDIR = "/absolute/path/to/.mcp-photo-edit"
@@ -110,7 +128,7 @@ MCP_PHOTO_EDIT_WORKDIR = "/absolute/path/to/.mcp-photo-edit"
 If you prefer to add it from the CLI instead of editing TOML manually:
 
 ```bash
-codex mcp add photo-edit --env MCP_PHOTO_EDIT_WORKDIR=/absolute/path/to/.mcp-photo-edit -- uv run mcp-photo-edit
+codex mcp add photo-edit --env MCP_PHOTO_EDIT_WORKDIR=/absolute/path/to/.mcp-photo-edit -- uvx mcp-photo-edit
 ```
 
 Verify the server is registered:
@@ -118,30 +136,6 @@ Verify the server is registered:
 ```bash
 codex mcp list
 ```
-
-Project guidance for Codex:
-
-- This repo includes project-scoped guidance in `AGENTS.md`.
-- This repo also ships an installable reusable skill at `skills/mcp-photo-edit`.
-
-Install the reusable skill manually by linking or copying it into Codex's skill directory.
-`$CODEX_HOME` typically defaults to `~/.codex`.
-
-Link it:
-
-```bash
-mkdir -p ~/.codex/skills
-ln -s <repo-path>/skills/mcp-photo-edit ~/.codex/skills/mcp-photo-edit
-```
-
-Or copy it:
-
-```bash
-mkdir -p ~/.codex/skills
-cp -R <repo-path>/skills/mcp-photo-edit ~/.codex/skills/mcp-photo-edit
-```
-
-Codex CLI does not currently expose a dedicated `skills install` subcommand, so the skill-directory install is the supported path.
 
 Recommended `AGENTS.md` snippet for better tool selection:
 
@@ -157,8 +151,8 @@ Add this block:
 {
   "mcpServers": {
     "photo-edit": {
-      "command": "uv",
-      "args": ["run", "mcp-photo-edit"],
+      "command": "uvx",
+      "args": ["mcp-photo-edit"],
       "env": {
         "MCP_PHOTO_EDIT_WORKDIR": "/absolute/path/to/.mcp-photo-edit"
       },
@@ -172,7 +166,7 @@ Add this block:
 Or add it from the CLI. This example writes to user config instead of project-local config:
 
 ```bash
-gemini mcp add --scope user --transport stdio --env MCP_PHOTO_EDIT_WORKDIR=/absolute/path/to/.mcp-photo-edit --timeout 30000 --trust photo-edit uv run mcp-photo-edit
+gemini mcp add --scope user --transport stdio --env MCP_PHOTO_EDIT_WORKDIR=/absolute/path/to/.mcp-photo-edit --timeout 30000 --trust photo-edit uvx mcp-photo-edit
 ```
 
 If you omit `--scope user`, Gemini CLI writes the MCP entry to project-local config by default.
@@ -189,26 +183,6 @@ If Gemini shows the stdio server as disconnected, trust the current folder first
 gemini trust
 ```
 
-Gemini CLI also supports installing the reusable skill bundled with this repo.
-
-Install from a local path:
-
-```bash
-gemini skills install <repo-path>/skills/mcp-photo-edit --scope user
-```
-
-For active local development, link it instead so updates in the repo are reflected immediately:
-
-```bash
-gemini skills link <repo-path>/skills/mcp-photo-edit --scope user
-```
-
-Verify the skill is available:
-
-```bash
-gemini skills list
-```
-
 ## Compatibility Note
 
 RAW support depends on the local RawTherapee build and its bundled RAW decoders. A file extension being supported in principle does not guarantee that every camera or compression variant will decode on every machine. When diagnosing unsupported RAW files, check the installed RawTherapee version and the camera / compression mode used by the source file. For reference, this project is primarily developed and tested on the environment described in the [Tested Environment](#tested-environment) section.
@@ -217,7 +191,7 @@ RAW support depends on the local RawTherapee build and its bundled RAW decoders.
 
 ## Advanced Image Info
 
-The typed render service can attach structured diagnostics to each preview:
+The server can attach structured diagnostics to each preview:
 
 - `preview_path` remains the primary image for aesthetic judgment.
 - `diagnostic_summary` adds machine-readable stats for exposure, balance, and saturation.
@@ -274,8 +248,8 @@ Current default-backend MVP adjustments:
 
 Use `list_supported_adjustments` to discover exact ranges, defaults, and example payloads at runtime.
 
-Backend note: `list_supported_adjustments` is the source of truth for the injected
-service's runtime capabilities.
+`list_supported_adjustments` is the source of truth for the installed renderer's runtime
+capabilities.
 
 ## Session History
 
@@ -290,8 +264,8 @@ service's runtime capabilities.
 
 ```text
 src/mcp_photo_edit/
-  interfaces.py    EditBackend and internal adapter protocols
-  backend.py       LocalFileBackend and in-process service adapter
+  interfaces.py    Backend protocols
+  backend.py       Local file editing backend
   models.py        Pydantic schemas and validation
   session.py       Session lifecycle and persistence
   server.py        MCP tool registration
@@ -304,7 +278,7 @@ skills/
 Install dev dependencies:
 
 ```bash
-uv sync --extra dev
+uv sync --dev
 ```
 
 Run tests:
@@ -318,6 +292,9 @@ Start the server over stdio:
 ```bash
 uv run mcp-photo-edit
 ```
+
+This repository is self-contained for development. `uv sync --dev` resolves all declared
+Python dependencies automatically.
 
 
 ## Disclaimers

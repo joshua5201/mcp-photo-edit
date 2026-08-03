@@ -106,6 +106,10 @@ uv run python -m compileall src
 ## Documentation Rules
 
 - Keep public docs free of machine-specific anecdotes and local sample-file references.
+- Present `mcp-photo-edit` as one installable product. User-facing setup must not require
+  sibling repository clones, editable dependency installs, or manual `PYTHONPATH`.
+- Runtime Python dependencies must be declared in package metadata and installed
+  automatically by `uv`, `pip`, or `pipx`.
 - Keep public docs free of deprecated darktable setup guidance.
 - If mentioning darktable at all, describe it only as unstable legacy code slated for removal.
 - Treat `README.md`, `DESIGN.md`, and `skills/mcp-photo-edit/SKILL.md` as the public source of truth.
