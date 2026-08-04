@@ -1,12 +1,12 @@
-"""Integration tests for EditBackend to in-process service wiring."""
+"""Integration tests for session backend to in-process adapter wiring."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
+from mcp_photo_edit_rawtherapee.models import AdjustmentState, SourceImageInfo
+from mcp_photo_edit_rawtherapee.service import RawEditService
 from PIL import Image
-from raw_edit_service.models import AdjustmentState, SourceImageInfo
-from raw_edit_service.service import RawEditService
 
 from mcp_photo_edit.backend import LocalFileBackend
 
@@ -52,7 +52,7 @@ class FakeRenderer:
         return (1600, 1200)
 
 
-def test_local_file_backend_calls_raw_edit_service_in_process(tmp_path: Path) -> None:
+def test_local_file_backend_calls_rawtherapee_adapter_in_process(tmp_path: Path) -> None:
     source = tmp_path / "source.png"
     Image.new("RGB", (640, 480), "#0f172a").save(source)
     service = RawEditService(FakeRenderer(), diagnostics_enabled=False)
@@ -61,7 +61,7 @@ def test_local_file_backend_calls_raw_edit_service_in_process(tmp_path: Path) ->
     session = backend.create_session(str(source))
     output = backend.export_image(session.session_id, str(tmp_path / "export.jpg"))
 
-    assert session.backend == "raw-edit-service"
+    assert session.backend == "mcp-photo-edit-rawtherapee"
     assert session.state_path is not None
     assert Path(session.state_path).name == "state.json"
     assert output.exists()

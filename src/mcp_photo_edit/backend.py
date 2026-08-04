@@ -1,4 +1,4 @@
-"""Local-file EditBackend backed by the in-process RAW edit service."""
+"""Local-file session backend backed by the in-process RawTherapee adapter."""
 
 from __future__ import annotations
 
@@ -7,11 +7,10 @@ import mimetypes
 import uuid
 from pathlib import Path
 
-from pydantic import BaseModel
-from raw_edit_contracts import (
+from mcp_photo_edit_core import (
     AdjustmentState as ContractAdjustmentState,
 )
-from raw_edit_contracts import (
+from mcp_photo_edit_core import (
     CropRect,
     DocumentState,
     GeometryState,
@@ -19,7 +18,8 @@ from raw_edit_contracts import (
     RenderRequest,
     SourceAsset,
 )
-from raw_edit_service import RawEditService
+from mcp_photo_edit_rawtherapee import RawEditService
+from pydantic import BaseModel
 
 from .errors import RenderFailedError
 from .interfaces import SessionRenderBackend
@@ -35,9 +35,9 @@ class _StoredRenderState(BaseModel):
 
 
 class ServiceRenderBackend:
-    """Translate session artifacts to in-process raw-edit-service calls."""
+    """Translate session artifacts to the in-process RawTherapee adapter."""
 
-    backend_id: str = "raw-edit-service"
+    backend_id: str = "mcp-photo-edit-rawtherapee"
     state_file_name: str = "state.json"
 
     def __init__(self, service: RawEditService | None = None) -> None:
@@ -123,7 +123,7 @@ class ServiceRenderBackend:
             )
         result = response.result
         if result is None:
-            raise RenderFailedError("RAW edit service returned no result.")
+            raise RenderFailedError("RawTherapee adapter returned no result.")
         if result.diagnostics is not None:
             self._diagnostics[target_path.resolve()] = DiagnosticSummary.model_validate(
                 result.diagnostics.summary.model_dump()
@@ -135,7 +135,7 @@ class ServiceRenderBackend:
 
 
 class LocalFileBackend(SessionManager):
-    """Public local implementation of EditBackend."""
+    """Public local implementation of the session editing use cases."""
 
     def __init__(
         self,

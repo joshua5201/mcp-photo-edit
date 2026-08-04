@@ -4,8 +4,8 @@ import json
 from pathlib import Path
 
 import pytest
+from mcp_photo_edit_rawtherapee.diagnostics import ImageDiagnostics
 from PIL import Image, ImageDraw
-from raw_edit_service.diagnostics import ImageDiagnostics
 
 from mcp_photo_edit.errors import ValidationError
 from mcp_photo_edit.models import (
@@ -382,76 +382,6 @@ def test_list_supported_adjustments_includes_new_rawtherapee_controls(tmp_path: 
     assert supported["sharpen_amount"].maximum == 1000.0
     assert supported["sharpen_radius"].default == 0.5
     assert supported["sharpen_contrast"].default == 20.0
-
-
-def test_get_session_migrates_legacy_xmp_path_to_state_path(tmp_path: Path) -> None:
-    session_dir = tmp_path / "workspace" / "legacy123"
-    session_dir.mkdir(parents=True)
-    manifest_path = session_dir / "session.json"
-
-    manifest_path.write_text(
-        """
-{
-  "session_id": "legacy123",
-  "source": {
-    "input_path": "/tmp/source.nef",
-    "file_name": "source.nef",
-    "suffix": ".nef",
-    "width": 4000,
-    "height": 3000
-  },
-  "workspace_dir": "/tmp/workspace/legacy123",
-  "state_path": null,
-  "xmp_path": "/tmp/workspace/legacy123/session.pp3",
-  "preview_path": "/tmp/workspace/legacy123/preview-0001.jpg",
-  "adjustments": {
-    "exposure": 0.0,
-    "contrast": 0.0,
-    "saturation": 0.0,
-    "rgb_mixer": null,
-    "denoise_luma": 0.0,
-    "denoise_detail": 0.0,
-    "denoise_chroma": 0.0,
-    "color_temperature": null,
-    "green_balance": null,
-    "highlights": 0.0,
-    "shadows": 0.0,
-    "orientation": 0,
-    "crop": null
-  },
-  "history": [
-    {
-      "step_id": "step-0001",
-      "kind": "init",
-      "adjustments": {
-        "exposure": 0.0,
-        "contrast": 0.0,
-        "saturation": 0.0,
-        "rgb_mixer": null,
-        "denoise_luma": 0.0,
-        "denoise_detail": 0.0,
-        "denoise_chroma": 0.0,
-        "color_temperature": null,
-        "green_balance": null,
-        "highlights": 0.0,
-        "shadows": 0.0,
-        "orientation": 0,
-        "crop": null
-      },
-      "state_path": "/tmp/workspace/legacy123/history/step-0001.pp3"
-    }
-  ],
-  "history_index": 0,
-  "backend": "rawtherapee-cli"
-}
-""".strip(),
-        encoding="utf-8",
-    )
-
-    manager = SessionManager(workspace_root=tmp_path / "workspace", backend=DummyBackend())
-    session = manager.get_session("legacy123")
-
-    assert session.state_path == "/tmp/workspace/legacy123/session.pp3"
 
 
 def test_export_uses_cursor_selected_state(tmp_path: Path) -> None:

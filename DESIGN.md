@@ -3,7 +3,7 @@
 ## Summary
 
 `mcp-photo-edit` is an MCP server for agent-driven photo editing. Its transport depends
-on the typed `EditBackend` use-case interface. The default `LocalFileBackend` owns
+on the typed `SessionEditBackend` use-case interface. The default `LocalFileBackend` owns
 session persistence and delegates rendering through an installed typed renderer layer.
 The published `mcp-photo-edit` package declares every Python runtime dependency, so a
 normal install or source checkout does not require additional repository setup.
