@@ -11,7 +11,9 @@ Each session now also maintains an explicit undo / redo timeline in `session.jso
 
 ## Examples
 
-The demo photographs are original work and are not covered by the GPL license. Commercial use is prohibited.
+The JPEG images embedded in this README are original work by Tsung-en Hsiao and are
+licensed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).
+See [demo/ASSET_LICENSES.md](demo/ASSET_LICENSES.md) for the per-file list.
 
 ### Example: Fujifilm Style (v0.2.0)
 
@@ -70,13 +72,28 @@ Not in scope:
 ### Tested Environment
 
 - **OS:** Windows 11 and Ubuntu 24.04 LTS
-- **RawTherapee:** v5.12 on Windows; v5.10 on Ubuntu
+- **RawTherapee:** v5.12 on Windows and in the Ubuntu 24.04 RAW E2E workflow
 
 Verify RawTherapee:
 
 ```shell
 rawtherapee-cli -v
 ```
+
+### Real RAW E2E test
+
+The normal test suite skips the real RAW fixture so contributors without
+RawTherapee can run the fast unit tests. To exercise the complete MCP stdio →
+RawTherapee CLI path, provide an absolute CLI path and opt in explicitly:
+
+```powershell
+$env:RAWTHERAPEE_CLI = "C:\Program Files\RawTherapee\5.12\rawtherapee-cli.exe"
+$env:MCP_PHOTO_EDIT_RAW_E2E = "1"
+uv run pytest -m raw_e2e
+```
+
+The public fixture is licensed separately under CC BY-SA 4.0 and the workflow
+does not upload any generated previews or exports.
 
 On Windows, if RawTherapee is installed but its directory is not on `PATH`, set the
 absolute executable path before starting the MCP client:

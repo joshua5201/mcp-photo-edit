@@ -12,5 +12,6 @@ dist/
 __pycache__/
 *.egg-info/
 *.NEF
+!tests/fixtures/raw/no_people_bird.nef
 plans/
 .codex

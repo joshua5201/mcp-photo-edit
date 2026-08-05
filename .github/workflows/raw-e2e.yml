@@ -1,0 +1,65 @@
+name: RawTherapee MCP E2E
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/raw-e2e.yml"
+      - "pyproject.toml"
+      - "src/**"
+      - "tests/e2e/**"
+      - "tests/fixtures/raw/**"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/raw-e2e.yml"
+      - "pyproject.toml"
+      - "src/**"
+      - "tests/e2e/**"
+      - "tests/fixtures/raw/**"
+  workflow_dispatch:
+
+concurrency:
+  group: raw-e2e-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rawtherapee-mcp-e2e:
+    name: RawTherapee 5.12 MCP stdio E2E
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    env:
+      MCP_PHOTO_EDIT_RAW_E2E: "1"
+      RAWTHERAPEE_APPIMAGE: RawTherapee_5.12_release.AppImage
+      RAWTHERAPEE_SHA256: 95d0db7b9c6af85209af66b10b31ac47270e39d937763ac919f826586ea49f08
+      RAWTHERAPEE_URL: https://www.rawtherapee.com/shared/builds/linux/RawTherapee_5.12_release.AppImage
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Install package and development tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --editable . --group dev
+
+      - name: Install verified RawTherapee CLI
+        run: |
+          curl --fail --location --retry 3 --output "$RAWTHERAPEE_APPIMAGE" "$RAWTHERAPEE_URL"
+          echo "$RAWTHERAPEE_SHA256  $RAWTHERAPEE_APPIMAGE" | sha256sum --check --strict
+          chmod +x "$RAWTHERAPEE_APPIMAGE"
+          "./$RAWTHERAPEE_APPIMAGE" --appimage-extract
+          RAWTHERAPEE_CLI_PATH="$(find "$PWD/squashfs-root" -type f -name rawtherapee-cli -print -quit)"
+          test -n "$RAWTHERAPEE_CLI_PATH"
+          test -x "$RAWTHERAPEE_CLI_PATH"
+          "$RAWTHERAPEE_CLI_PATH" -v
+          echo "RAWTHERAPEE_CLI=$RAWTHERAPEE_CLI_PATH" >> "$GITHUB_ENV"
+
+      - name: Run MCP stdio and RawTherapee E2E
+        run: python -m pytest -m raw_e2e
