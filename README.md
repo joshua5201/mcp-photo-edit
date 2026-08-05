@@ -89,7 +89,7 @@ RawTherapee CLI path, provide an absolute CLI path and opt in explicitly:
 ```powershell
 $env:RAWTHERAPEE_CLI = "C:\Program Files\RawTherapee\5.12\rawtherapee-cli.exe"
 $env:MCP_PHOTO_EDIT_RAW_E2E = "1"
-uv run pytest -m raw_e2e
+uv run --frozen pytest -m raw_e2e
 ```
 
 The public fixture is licensed separately under CC BY-SA 4.0 and the workflow
@@ -295,23 +295,25 @@ skills/
 Install dev dependencies:
 
 ```bash
-uv sync --dev
+uv sync --frozen --group dev
 ```
 
 Run tests:
 
 ```bash
-uv run pytest
+uv run --frozen pytest
 ```
 
 Start the server over stdio:
 
 ```bash
-uv run mcp-photo-edit
+uv run --frozen mcp-photo-edit
 ```
 
-This repository is self-contained for development. `uv sync --dev` resolves all declared
-Python dependencies automatically.
+This repository is self-contained for development. `uv sync --frozen --group dev` uses
+the checked-in public-index lockfile to resolve all declared Python dependencies
+automatically. Development and CI require uv `0.11.32`; the project itself is the
+expected editable root entry in `uv.lock`.
 
 
 ## Disclaimers
