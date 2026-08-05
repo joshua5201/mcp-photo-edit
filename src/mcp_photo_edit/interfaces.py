@@ -48,7 +48,7 @@ class SessionRenderBackend(Protocol):
     def diagnostics_for(self, output_path: Path) -> DiagnosticSummary | None: ...
 
 
-class EditBackend(Protocol):
+class SessionEditBackend(Protocol):
     """Use-case API consumed by the MCP transport."""
 
     def create_session(

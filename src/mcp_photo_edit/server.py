@@ -10,7 +10,7 @@ from pydantic import BaseModel
 
 from .backend import LocalFileBackend
 from .errors import PhotoEditError
-from .interfaces import EditBackend
+from .interfaces import SessionEditBackend
 from .models import (
     AdjustmentPatch,
     ErrorInfo,
@@ -23,7 +23,7 @@ from .models import (
 SessionResultT = TypeVar("SessionResultT", bound=BaseModel)
 
 
-def create_server(backend: EditBackend | None = None) -> FastMCP:
+def create_server(backend: SessionEditBackend | None = None) -> FastMCP:
     """Create the FastMCP server instance."""
 
     edit_backend = backend or LocalFileBackend()

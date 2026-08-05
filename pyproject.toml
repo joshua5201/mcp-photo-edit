@@ -12,9 +12,14 @@ requires-python = ">=3.12"
 dependencies = [
   "mcp[cli]>=1.0,<2",
   "pydantic>=2.7,<3",
-  "raw-edit-contracts>=0.1,<0.2",
-  "raw-edit-service>=0.1,<0.2",
+  "mcp-photo-edit-core>=0.1,<0.2",
+  "mcp-photo-edit-rawtherapee>=0.1,<0.2",
 ]
+
+[project.urls]
+Homepage = "https://github.com/joshua5201/mcp-photo-edit"
+Repository = "https://github.com/joshua5201/mcp-photo-edit"
+Issues = "https://github.com/joshua5201/mcp-photo-edit/issues"
 
 [dependency-groups]
 dev = [

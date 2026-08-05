@@ -7,7 +7,7 @@ This file is a fast handoff for future work on `mcp-photo-edit`.
 - MCP server for agent-driven photo editing
 - Public package / module: `mcp_photo_edit`
 - Public CLI entrypoint: `mcp-photo-edit`
-- Current backend: `LocalFileBackend` calling `raw-edit-service` in-process
+- Current backend: `LocalFileBackend` calling `mcp-photo-edit-rawtherapee` in-process
 - Repo also ships a reusable skill at `skills/mcp-photo-edit`
 
 ## Backend Status
@@ -57,14 +57,14 @@ Sessions are stateful and workspace-backed. The public API is adjustment-based, 
 
 - `src/mcp_photo_edit/server.py`: FastMCP tool registration
 - `src/mcp_photo_edit/backend.py`: LocalFileBackend and service adapter
-- `src/mcp_photo_edit/interfaces.py`: typed EditBackend contracts
+- `src/mcp_photo_edit/interfaces.py`: typed session backend contracts
 - `src/mcp_photo_edit/session.py`: session lifecycle and persistence
 - `src/mcp_photo_edit/models.py`: schemas and validation
 
 ## Important Implementation Notes
 
 - Sessions persist an internal renderer-neutral `state_path`.
-- RawTherapee implementation details belong to `raw-edit-service`.
+- RawTherapee implementation details belong to `mcp-photo-edit-rawtherapee`.
 - Preview rendering and final export are separate operations.
 - Crop math must use the full developed image dimensions as the canonical base, not the dimensions of an already-cropped preview.
 - `exiftool` is used when available as a metadata fallback, but the authoritative geometry base should come from real rendered dimensions when needed.
@@ -75,13 +75,6 @@ Preferred env vars:
 
 - `MCP_PHOTO_EDIT_WORKDIR`
 - `MCP_PHOTO_EDIT_BACKEND`
-
-Backward-compatible env-var fallbacks still exist in code:
-
-- `MCP_DARKTABLE_WORKDIR`
-- `MCP_DARKTABLE_BACKEND`
-
-These fallbacks are compatibility-only. Avoid introducing new docs or features around the old names.
 
 ## Verification Commands
 
@@ -106,6 +99,10 @@ uv run python -m compileall src
 ## Documentation Rules
 
 - Keep public docs free of machine-specific anecdotes and local sample-file references.
+- Present `mcp-photo-edit` as one installable product. User-facing setup must not require
+  sibling repository clones, editable dependency installs, or manual `PYTHONPATH`.
+- Runtime Python dependencies must be declared in package metadata and installed
+  automatically by `uv`, `pip`, or `pipx`.
 - Keep public docs free of deprecated darktable setup guidance.
 - If mentioning darktable at all, describe it only as unstable legacy code slated for removal.
 - Treat `README.md`, `DESIGN.md`, and `skills/mcp-photo-edit/SKILL.md` as the public source of truth.

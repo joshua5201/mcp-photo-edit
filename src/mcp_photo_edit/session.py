@@ -32,9 +32,7 @@ class SessionManager:
         workspace_root: Path | None = None,
         backend: SessionRenderBackend | None = None,
     ) -> None:
-        configured_workdir = os.environ.get("MCP_PHOTO_EDIT_WORKDIR") or os.environ.get(
-            "MCP_DARKTABLE_WORKDIR"
-        )
+        configured_workdir = os.environ.get("MCP_PHOTO_EDIT_WORKDIR")
         default_root = Path(configured_workdir or ".mcp-photo-edit")
         self.workspace_root = (workspace_root or default_root).resolve()
         if backend is None:
@@ -346,10 +344,6 @@ class SessionManager:
 
     def _backend_for_session(self, session: SessionState) -> SessionRenderBackend:
         backend = self.backends.get(session.backend)
-        if backend is None and session.backend == "rawtherapee-cli":
-            backend = self.backends.get(self.default_backend_id)
-            if backend is not None:
-                session.backend = backend.backend_id
         if backend is None:
             supported = ", ".join(sorted(self.backends))
             raise ValidationError(

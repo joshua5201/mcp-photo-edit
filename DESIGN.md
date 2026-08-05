@@ -3,10 +3,10 @@
 ## Summary
 
 `mcp-photo-edit` is an MCP server for agent-driven photo editing. Its transport depends
-on the typed `EditBackend` use-case interface. The default `LocalFileBackend` owns
-session persistence and calls `raw-edit-service` in-process using
-`raw-edit-contracts`; renderer-specific profile generation and process control do not
-live in this repository.
+on the typed `SessionEditBackend` use-case interface. The default `LocalFileBackend` owns
+session persistence and delegates rendering through an installed typed renderer layer.
+The published `mcp-photo-edit` package declares every Python runtime dependency, so a
+normal install or source checkout does not require additional repository setup.
 
 Current backend policy:
 
@@ -168,9 +168,9 @@ Rules:
 
 Current implementation note:
 
-The MCP adapter sends typed document state to `raw-edit-service`. The current MVP
-exposes core tone controls, channel mixing, denoise, manual white balance, highlight /
-shadow recovery, and sharpening. Engine-specific translation stays in the service.
+The MCP adapter sends typed document state to the renderer layer. The current MVP exposes
+core tone controls, channel mixing, denoise, manual white balance, highlight / shadow
+recovery, and sharpening. Engine-specific translation stays behind that boundary.
 
 ## Architecture
 
@@ -190,14 +190,14 @@ shadow recovery, and sharpening. Engine-specific translation stays in the servic
 ### Local Backend Adapter Layer
 
 - persists renderer-neutral session snapshots
-- converts MCP session operations into `raw-edit-contracts` render requests
-- calls `raw-edit-service` in-process
+- converts MCP session operations into typed render requests
+- calls the installed renderer layer in-process
 
-### RAW Edit Service Layer
+### Rendering Layer
 
 - owns RawTherapee profile generation and process execution
 - returns revision-bound artifacts, diagnostics, and structured errors
-- remains replaceable by a future service implementation
+- remains replaceable by a future renderer implementation
 
 ## Filesystem And Session Model
 
