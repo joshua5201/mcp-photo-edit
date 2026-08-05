@@ -58,7 +58,13 @@ jobs:
           RAWTHERAPEE_CLI_PATH="$(find "$PWD/squashfs-root" -type f -name rawtherapee-cli -print -quit)"
           test -n "$RAWTHERAPEE_CLI_PATH"
           test -x "$RAWTHERAPEE_CLI_PATH"
-          "$RAWTHERAPEE_CLI_PATH" -v
+          set +e
+          RAWTHERAPEE_VERSION_OUTPUT="$("$RAWTHERAPEE_CLI_PATH" -v 2>&1)"
+          RAWTHERAPEE_VERSION_STATUS=$?
+          set -e
+          printf '%s\n' "$RAWTHERAPEE_VERSION_OUTPUT"
+          test "$RAWTHERAPEE_VERSION_STATUS" -eq 255
+          printf '%s\n' "$RAWTHERAPEE_VERSION_OUTPUT" | grep --fixed-strings "RawTherapee, version 5.12"
           echo "RAWTHERAPEE_CLI=$RAWTHERAPEE_CLI_PATH" >> "$GITHUB_ENV"
 
       - name: Run MCP stdio and RawTherapee E2E
